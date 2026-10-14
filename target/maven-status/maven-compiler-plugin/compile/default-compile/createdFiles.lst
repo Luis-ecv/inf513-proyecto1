@@ -1,0 +1,6 @@
+com\curriculo\config\Config.class
+com\curriculo\Main.class
+com\curriculo\comandos\CommandProcessor.class
+com\curriculo\db\Conexion.class
+com\curriculo\email\EmailReceiver.class
+com\curriculo\email\EmailSender.class
