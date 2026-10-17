@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import javax.mail.internet.MimeUtility;
 
 /**
  * Receptor de correos electrónicos vía Socket TCP puro sobre protocolo POP3 (puerto 110).
@@ -127,6 +128,13 @@ public class EmailReceiver implements Runnable {
             } else if (!linea.trim().isEmpty()) {
                 inSubject = false;
             }
+        }
+
+        // Decodificación de asunto según RFC 2047 (MIME encoded-words UTF-8 / Base64 / Quoted-Printable)
+        try {
+            subject = MimeUtility.decodeText(subject);
+        } catch (Exception e) {
+            // Si no se puede decodificar, se conserva el texto original
         }
 
         System.out.println("Procesando de: [" + remitente + "] | Asunto: [" + subject + "]");

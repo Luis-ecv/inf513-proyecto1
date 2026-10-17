@@ -132,18 +132,7 @@ public class UsuarioDAO {
                 ps.setString(1, email);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        return new Usuario(
-                                rs.getInt("id"),
-                                rs.getString("nombre_completo"),
-                                rs.getString("email"),
-                                rs.getString("username"),
-                                rs.getString("password_hash"),
-                                rs.getString("foto_ruta"),
-                                rs.getBoolean("activo"),
-                                rs.getTimestamp("fecha_registro"),
-                                rs.getInt("id_rol"),
-                                rs.getString("rol_nombre")
-                        );
+                        return mapearUsuario(rs);
                     }
                 }
             }
@@ -151,5 +140,82 @@ public class UsuarioDAO {
             System.err.println("Error al obtener usuario por email: " + e.getMessage());
         }
         return null;
+    }
+
+    public Usuario obtenerPorUsername(String username) {
+        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password_hash, " +
+                "u.foto_ruta, u.activo, u.fecha_registro, u.id_rol, r.nombre AS rol_nombre " +
+                "FROM usuario u " +
+                "JOIN rol r ON u.id_rol = r.id " +
+                "WHERE u.username = ?";
+
+        try (Connection conn = Conexion.getConnection()) {
+            if (conn == null) return null;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, username);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return mapearUsuario(rs);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al obtener usuario por username: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public Usuario autenticar(String email, String password) {
+        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password_hash, " +
+                "u.foto_ruta, u.activo, u.fecha_registro, u.id_rol, r.nombre AS rol_nombre " +
+                "FROM usuario u " +
+                "JOIN rol r ON u.id_rol = r.id " +
+                "WHERE u.email = ? AND u.password_hash = ? AND u.activo = true";
+
+        try (Connection conn = Conexion.getConnection()) {
+            if (conn == null) return null;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, email);
+                ps.setString(2, password);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return mapearUsuario(rs);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al autenticar usuario: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public boolean asociarEmail(int idUsuario, String email) {
+        String sql = "UPDATE usuario SET email = ? WHERE id = ?";
+        try (Connection conn = Conexion.getConnection()) {
+            if (conn == null) return false;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, email);
+                ps.setInt(2, idUsuario);
+                return ps.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al asociar email al usuario: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private Usuario mapearUsuario(ResultSet rs) throws SQLException {
+        return new Usuario(
+                rs.getInt("id"),
+                rs.getString("nombre_completo"),
+                rs.getString("email"),
+                rs.getString("username"),
+                rs.getString("password_hash"),
+                rs.getString("foto_ruta"),
+                rs.getBoolean("activo"),
+                rs.getTimestamp("fecha_registro"),
+                rs.getInt("id_rol"),
+                rs.getString("rol_nombre")
+        );
     }
 }

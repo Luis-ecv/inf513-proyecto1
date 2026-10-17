@@ -25,13 +25,18 @@ Este documento define la interfaz de comandos enviada en el encabezado `Subject`
 
 ## 2. Catálogo de Comandos por Caso de Uso
 
+### Autenticación y Control de Sesión
+| Comando | Parámetros | Descripción | Formato Respuesta |
+| :--- | :--- | :--- | :--- |
+| `LOGIN[...]` | `"email", "password"` | Inicia sesión verificando credenciales del correo del usuario y vincula la dirección remitente para autorizar comandos por Rol. | Ficha HTML con perfil y comandos habilitados |
+
 ### CU1. Gestión de Usuarios y Roles (con Foto)
 | Comando | Parámetros | Descripción | Formato Respuesta |
 | :--- | :--- | :--- | :--- |
 | `LISUSU["*"]` | `*` | Lista todos los usuarios registrados con su rol y estado. | Tabla HTML |
-| `INSUSU[...]` | `"nombre_completo", "email", "username", "pass", "id_rol", "foto_ruta"` | Registra un nuevo usuario en el sistema. | Texto plano con ID |
-| `UPDUSU[...]` | `"id", "nombre_completo", "email", "username", "pass", "id_rol", "foto_ruta", "activo"` | Actualiza los datos de un usuario existente. | Texto plano |
-| `DELUSU[...]` | `"id"` | Realiza baja lógica/física del usuario. | Texto plano |
+| `INSUSU[...]` | `"nombre_completo", "email", "username", "pass", "id_rol", "foto_ruta"` | Registra un nuevo usuario aplicando política de contraseñas (8-25 chars, alfanumérico + ñ/Ñ, sin símbolos ni espacios). | Texto plano con ID y Rol |
+| `UPDUSU[...]` | `"id", "nombre_completo", "email", "username", "pass", "id_rol", "foto_ruta", "activo"` | Actualiza los datos de un usuario existente. La contraseña es obligatoria y se valida estrictamente. | Texto plano |
+| `DELUSU[...]` | `"id"` | Realiza baja del usuario verificando que no tenga dependencias. | Texto plano |
 
 ### CU2. Gestión de Estructura de Plan de Estudios y Asignaturas
 | Comando | Parámetros | Descripción | Formato Respuesta |
