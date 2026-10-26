@@ -18,6 +18,7 @@ com\curriculo\dao\AsignaturaDAO.class
 com\curriculo\dao\ReporteDAO.class
 com\curriculo\seguridad\PasswordValidator$Resultado.class
 com\curriculo\comandos\CommandProcessor.class
+com\curriculo\seguridad\PasswordHasher.class
 com\curriculo\modelo\PlanEstudio.class
 com\curriculo\dao\UsuarioDAO.class
 com\curriculo\db\Conexion.class
@@ -31,4 +32,5 @@ com\curriculo\dao\CapituloDAO.class
 com\curriculo\dao\ComponenteDAO.class
 com\curriculo\dao\DocumentoEvidenciaDAO.class
 com\curriculo\dao\PlanEstudioDAO.class
+com\curriculo\db\DatabaseSeeder.class
 com\curriculo\email\EmailSender.class

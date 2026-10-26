@@ -7,19 +7,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO para gestión de observaciones y subsanaciones técnicas sobre capítulos (CU5, RF-08).
+ * DAO para gestión de observaciones y subsanaciones técnicas sobre capítulos
+ * (CU5, RF-08).
  */
 public class ObservacionDAO {
 
     public int insertar(Observacion o) {
         String sql = "INSERT INTO observacion(comentario, id_capitulo, id_usuario_observador) VALUES(?, ?, ?)";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return -1;
+            if (conn == null)
+                return -1;
             try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, o.getComentario());
                 ps.setInt(2, o.getIdCapitulo());
@@ -44,7 +45,8 @@ public class ObservacionDAO {
         String sql = "UPDATE observacion SET respuesta_delegado = ?, fecha_respuesta = CURRENT_TIMESTAMP, " +
                 "resuelta = TRUE, fecha_cierre = CURRENT_TIMESTAMP, id_usuario_respuesta = ? WHERE id = ?";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, respuesta);
                 ps.setInt(2, idDelegado);
@@ -71,7 +73,8 @@ public class ObservacionDAO {
                 "ORDER BY o.fecha_creacion DESC";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return lista;
+            if (conn == null)
+                return lista;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, idCapitulo);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -86,8 +89,7 @@ public class ObservacionDAO {
                                 rs.getTimestamp("fecha_cierre"),
                                 rs.getInt("id_capitulo"),
                                 rs.getInt("id_usuario_observador"),
-                                (Integer) rs.getObject("id_usuario_respuesta")
-                        );
+                                (Integer) rs.getObject("id_usuario_respuesta"));
                         o.setNombreObservador(rs.getString("observador_nombre"));
                         o.setNombreRespuesta(rs.getString("delegado_nombre"));
                         o.setTituloCapitulo(rs.getString("capitulo_titulo"));
@@ -102,12 +104,14 @@ public class ObservacionDAO {
     }
 
     /**
-     * Cuenta cuántas observaciones tiene un capítulo que NO hayan sido resueltas aún (RF-07).
+     * Cuenta cuántas observaciones tiene un capítulo que NO hayan sido resueltas
+     * aún (RF-07).
      */
     public int contarObservacionesPendientes(int idCapitulo) {
         String sql = "SELECT COUNT(*) FROM observacion WHERE id_capitulo = ? AND resuelta = FALSE";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return 0;
+            if (conn == null)
+                return 0;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, idCapitulo);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -134,7 +138,8 @@ public class ObservacionDAO {
                 "WHERE o.id = ?";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return null;
+            if (conn == null)
+                return null;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -149,8 +154,7 @@ public class ObservacionDAO {
                                 rs.getTimestamp("fecha_cierre"),
                                 rs.getInt("id_capitulo"),
                                 rs.getInt("id_usuario_observador"),
-                                (Integer) rs.getObject("id_usuario_respuesta")
-                        );
+                                (Integer) rs.getObject("id_usuario_respuesta"));
                         o.setNombreObservador(rs.getString("observador_nombre"));
                         o.setNombreRespuesta(rs.getString("delegado_nombre"));
                         o.setTituloCapitulo(rs.getString("capitulo_titulo"));

@@ -10,13 +10,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
- * DAO analítico para la generación de métricas de avance, tablero de control (CU7, RF-09),
- * compilación del informe final consolidado (CU7, RF-15) y estadísticas de productividad (CU8).
+ * DAO analítico para la generación de métricas de avance, tablero de control
+ * (CU7, RF-09),
+ * compilación del informe final consolidado (CU7, RF-15) y estadísticas de
+ * productividad (CU8).
  */
 public class ReporteDAO {
 
@@ -70,20 +70,25 @@ public class ReporteDAO {
                 "GROUP BY e.id, e.nombre";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return m;
+            if (conn == null)
+                return m;
 
             // 1. Conteo por estados de la máquina de estados
             try (PreparedStatement ps = conn.prepareStatement(sqlEstados);
-                 ResultSet rs = ps.executeQuery()) {
+                    ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     String estado = rs.getString("nombre");
                     int cant = rs.getInt("cantidad");
                     m.totalCapitulos += cant;
 
-                    if ("Borrador".equalsIgnoreCase(estado)) m.borradorCount = cant;
-                    else if ("En Revisión".equalsIgnoreCase(estado)) m.enRevisionCount = cant;
-                    else if ("Observado".equalsIgnoreCase(estado)) m.observadoCount = cant;
-                    else if ("Aprobado".equalsIgnoreCase(estado)) m.aprobadoCount = cant;
+                    if ("Borrador".equalsIgnoreCase(estado))
+                        m.borradorCount = cant;
+                    else if ("En Revisión".equalsIgnoreCase(estado))
+                        m.enRevisionCount = cant;
+                    else if ("Observado".equalsIgnoreCase(estado))
+                        m.observadoCount = cant;
+                    else if ("Aprobado".equalsIgnoreCase(estado))
+                        m.aprobadoCount = cant;
                 }
             }
 
@@ -91,7 +96,8 @@ public class ReporteDAO {
                 m.porcentajeAvance = ((double) m.aprobadoCount / m.totalCapitulos) * 100.0;
             }
 
-            // 2. Alertas de capítulos en estado 'Observado' con detalle de observaciones pendientes
+            // 2. Alertas de capítulos en estado 'Observado' con detalle de observaciones
+            // pendientes
             String sqlObs = "SELECT c.id, c.numero, c.titulo, comp.nombre AS comp_nombre, e.nombre AS est_nombre " +
                     "FROM capitulo c " +
                     "JOIN componente comp ON c.id_componente = comp.id " +
@@ -100,7 +106,7 @@ public class ReporteDAO {
                     "ORDER BY c.numero ASC";
 
             try (PreparedStatement ps = conn.prepareStatement(sqlObs);
-                 ResultSet rs = ps.executeQuery()) {
+                    ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Capitulo cap = new Capitulo(
                             rs.getInt("id"),
@@ -109,8 +115,7 @@ public class ReporteDAO {
                             null,
                             0,
                             3,
-                            null
-                    );
+                            null);
                     cap.setNombreComponente(rs.getString("comp_nombre"));
                     cap.setNombreEstado(rs.getString("est_nombre"));
                     m.capitulosObservados.add(cap);
@@ -120,7 +125,7 @@ public class ReporteDAO {
             // 3. Totales de la malla curricular
             String sqlMalla = "SELECT COUNT(id) AS total_asig, COALESCE(SUM(creditos), 0) AS total_cred FROM asignatura";
             try (PreparedStatement ps = conn.prepareStatement(sqlMalla);
-                 ResultSet rs = ps.executeQuery()) {
+                    ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     m.totalAsignaturas = rs.getInt("total_asig");
                     m.totalCreditos = rs.getInt("total_cred");
@@ -135,7 +140,8 @@ public class ReporteDAO {
     }
 
     /**
-     * Compila todos los elementos oficiales para el Reporte Final Consolidado (RF-15).
+     * Compila todos los elementos oficiales para el Reporte Final Consolidado
+     * (RF-15).
      */
     public ReporteFinalConsolidado compilarReporteFinal(int idPlan) {
         ReporteFinalConsolidado rep = new ReporteFinalConsolidado();
@@ -147,10 +153,12 @@ public class ReporteDAO {
         }
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return rep;
+            if (conn == null)
+                return rep;
 
             // 1. Asignaturas de la malla
-            String sqlAsig = "SELECT id, sigla, nombre, semestre, horas_teoricas, horas_practicas, creditos, area_formativa " +
+            String sqlAsig = "SELECT id, sigla, nombre, semestre, horas_teoricas, horas_practicas, creditos, area_formativa "
+                    +
                     "FROM asignatura WHERE id_plan_estudio = ? ORDER BY semestre ASC, sigla ASC";
             try (PreparedStatement ps = conn.prepareStatement(sqlAsig)) {
                 ps.setInt(1, idPlan);
@@ -165,8 +173,7 @@ public class ReporteDAO {
                                 rs.getInt("horas_practicas"),
                                 rs.getInt("creditos"),
                                 rs.getString("area_formativa"),
-                                idPlan
-                        );
+                                idPlan);
                         rep.totalCreditos += a.getCreditos();
                         rep.asignaturas.add(a);
                     }
@@ -194,8 +201,7 @@ public class ReporteDAO {
                                 rs.getString("contenido"),
                                 0,
                                 4,
-                                null
-                        );
+                                null);
                         cap.setNombreComponente(rs.getString("comp_nombre"));
                         cap.setResponsables(rs.getString("redactores"));
                         rep.capitulosAprobados.add(cap);
@@ -210,7 +216,7 @@ public class ReporteDAO {
                     "WHERE d.vigente = TRUE " +
                     "ORDER BY d.fecha_emision DESC";
             try (PreparedStatement ps = conn.prepareStatement(sqlDocs);
-                 ResultSet rs = ps.executeQuery()) {
+                    ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     DocumentoEvidencia doc = new DocumentoEvidencia(
                             rs.getInt("id"),
@@ -222,8 +228,7 @@ public class ReporteDAO {
                             rs.getString("archivo_ruta"),
                             rs.getBoolean("vigente"),
                             (Integer) rs.getObject("id_documento_padre"),
-                            rs.getTimestamp("fecha_registro")
-                    );
+                            rs.getTimestamp("fecha_registro"));
                     rep.evidenciasVigentes.add(doc);
                 }
             }
@@ -249,9 +254,10 @@ public class ReporteDAO {
                 "ORDER BY comp.numero ASC";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return lista;
+            if (conn == null)
+                return lista;
             try (PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
+                    ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     EstadisticaComponente e = new EstadisticaComponente();
                     e.idComponente = rs.getInt("id");
@@ -282,15 +288,17 @@ public class ReporteDAO {
                 "JOIN rol r ON u.id_rol = r.id " +
                 "LEFT JOIN asignacion_capitulo ac ON u.id = ac.id_usuario " +
                 "LEFT JOIN observacion obs_emitidas ON u.id = obs_emitidas.id_usuario_observador " +
-                "LEFT JOIN observacion obs_subsanadas ON u.id = obs_subsanadas.id_usuario_respuesta AND obs_subsanadas.resuelta = TRUE " +
+                "LEFT JOIN observacion obs_subsanadas ON u.id = obs_subsanadas.id_usuario_respuesta AND obs_subsanadas.resuelta = TRUE "
+                +
                 "WHERE u.activo = TRUE " +
                 "GROUP BY u.id, u.nombre_completo, r.nombre " +
                 "ORDER BY caps_asignados DESC, u.nombre_completo ASC";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return lista;
+            if (conn == null)
+                return lista;
             try (PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
+                    ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     EstadisticaUsuario u = new EstadisticaUsuario();
                     u.idUsuario = rs.getInt("id");

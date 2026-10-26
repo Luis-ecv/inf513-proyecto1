@@ -2,6 +2,7 @@ package com.curriculo.dao;
 
 import com.curriculo.db.Conexion;
 import com.curriculo.modelo.Usuario;
+import com.curriculo.seguridad.PasswordHasher;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -170,13 +171,14 @@ public class UsuarioDAO {
                 "u.foto_ruta, u.activo, u.fecha_registro, u.id_rol, r.nombre AS rol_nombre " +
                 "FROM usuario u " +
                 "JOIN rol r ON u.id_rol = r.id " +
-                "WHERE u.email = ? AND u.password_hash = ? AND u.activo = true";
+                "WHERE u.email = ? AND (u.password_hash = ? OR u.password_hash = ?) AND u.activo = true";
 
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null) return null;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, email);
-                ps.setString(2, password);
+                ps.setString(2, PasswordHasher.hash(password));
+                ps.setString(3, password);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         return mapearUsuario(rs);

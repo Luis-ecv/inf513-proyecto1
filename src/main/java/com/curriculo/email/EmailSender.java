@@ -46,12 +46,13 @@ public class EmailSender {
             if (!validarRespuesta(res, "354", "DATA")) return false;
 
             String subjectCodificado = codificarAsunto(asunto);
+            String cuerpoNormalizado = normalizarCuerpoSMTP(cuerpo);
             String contenido = "From: " + Config.MAIL_EMAIL + "\r\n" +
                     "To: " + destinatario + "\r\n" +
                     "Subject: " + subjectCodificado + "\r\n" +
                     "Content-Type: text/plain; charset=UTF-8\r\n" +
                     "\r\n" +
-                    cuerpo + "\r\n" +
+                    cuerpoNormalizado + "\r\n" +
                     ".\r\n";
 
             output.write(contenido.getBytes(StandardCharsets.UTF_8));
@@ -102,6 +103,7 @@ public class EmailSender {
             if (!validarRespuesta(res, "354", "DATA")) return false;
 
             String subjectCodificado = codificarAsunto(asunto);
+            String cuerpoNormalizado = normalizarCuerpoSMTP(cuerpoHTML);
             String contenido = "From: " + Config.MAIL_EMAIL + "\r\n" +
                     "To: " + destinatario + "\r\n" +
                     "Subject: " + subjectCodificado + "\r\n" +
@@ -109,7 +111,7 @@ public class EmailSender {
                     "Content-Type: text/html; charset=UTF-8\r\n" +
                     "Content-Transfer-Encoding: 8bit\r\n" +
                     "\r\n" +
-                    cuerpoHTML + "\r\n" +
+                    cuerpoNormalizado + "\r\n" +
                     ".\r\n";
 
             output.write(contenido.getBytes(StandardCharsets.UTF_8));
@@ -128,6 +130,24 @@ public class EmailSender {
         } finally {
             cerrarRecursos(socket, input, output);
         }
+    }
+
+    public static String normalizarCuerpoSMTP(String cuerpo) {
+        if (cuerpo == null) return "";
+        String texto = cuerpo.replace("\r\n", "\n").replace("\r", "\n");
+        String[] lineas = texto.split("\n", -1);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < lineas.length; i++) {
+            String linea = lineas[i];
+            if (linea.startsWith(".")) {
+                sb.append("."); // Dot-stuffing RFC 5321 sección 4.5.2
+            }
+            sb.append(linea);
+            if (i < lineas.length - 1) {
+                sb.append("\r\n");
+            }
+        }
+        return sb.toString();
     }
 
     private static boolean validarRespuesta(String respuesta, String codigoEsperado, String etapa) {

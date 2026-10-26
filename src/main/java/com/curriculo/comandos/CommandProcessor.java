@@ -19,6 +19,7 @@ import com.curriculo.modelo.Observacion;
 import com.curriculo.modelo.PlanEstudio;
 import com.curriculo.modelo.Prerrequisito;
 import com.curriculo.modelo.Usuario;
+import com.curriculo.seguridad.PasswordHasher;
 import com.curriculo.seguridad.PasswordValidator;
 import java.sql.Date;
 import java.util.ArrayList;
@@ -76,11 +77,6 @@ public class CommandProcessor {
                             "Verifique su dirección de correo electrónico y contraseña e intente nuevamente.";
                 }
 
-                if (remitente != null && !remitente.isEmpty() && !remitente.equalsIgnoreCase(u.getEmail())) {
-                    usuarioDAO.asociarEmail(u.getId(), remitente);
-                    u.setEmail(remitente);
-                }
-
                 return generarPerfilUsuarioHTML(u);
             }
 
@@ -128,7 +124,8 @@ public class CommandProcessor {
                     return "Error al registrar usuario: El nombre de usuario '" + username + "' ya está en uso. Elija otro.";
                 }
 
-                Usuario u = new Usuario(nombre, email, username, pass, foto, idRol);
+                String passHash = PasswordHasher.hash(pass);
+                Usuario u = new Usuario(nombre, email, username, passHash, foto, idRol);
                 int idGen = usuarioDAO.insertar(u);
                 return idGen > 0
                         ? "Usuario registrado exitosamente. ID asignado: " + idGen + " (Rol ID: " + idRol + ")"
@@ -157,7 +154,8 @@ public class CommandProcessor {
                     return resPass.getMensaje();
                 }
 
-                Usuario u = new Usuario(id, nombre, email, username, pass, foto, activo, null, idRol, null);
+                String passHash = PasswordHasher.hash(pass);
+                Usuario u = new Usuario(id, nombre, email, username, passHash, foto, activo, null, idRol, null);
                 boolean ok = usuarioDAO.actualizar(u);
                 return ok ? "Usuario ID " + id + " actualizado correctamente." : "Error al actualizar usuario ID " + id + ". Verifique que el ID exista.";
             }
@@ -765,8 +763,7 @@ public class CommandProcessor {
 
         Usuario remitenteUser = usuarioDAO.obtenerPorEmail(remitente);
         if (remitenteUser == null) {
-            return "Acceso denegado: La cuenta de correo remitente <" + remitente + "> no está vinculada a ningún usuario en el sistema.\n" +
-                    "Para operar en el sistema debe registrarse o iniciar sesión mediante: LOGIN[\"username\", \"password\"].";
+            return generarAlertaAccesoDenegadoHTML(remitente, comando);
         }
 
         int rol = remitenteUser.getIdRol();
@@ -801,6 +798,43 @@ public class CommandProcessor {
         }
 
         return null;
+    }
+
+    private String generarAlertaAccesoDenegadoHTML(String remitente, String comando) {
+        return "<html><body style='font-family: Arial, sans-serif; color: #333; margin: 20px; line-height: 1.5;'>" +
+                "<div style='background-color: #c0392b; color: white; padding: 15px 20px; border-radius: 6px; max-width: 650px;'>" +
+                "<h2 style='margin: 0; font-size: 20px;'>🚫 Acceso Restringido - Autenticación Requerida</h2>" +
+                "</div>" +
+                "<div style='background-color: #fdf7f7; border: 1px solid #ebccd1; padding: 18px; border-radius: 6px; margin-top: 15px; max-width: 650px;'>" +
+                "<p style='margin: 0 0 10px 0; font-size: 14px; color: #a94442;'>" +
+                "La dirección de correo remitente <b>&lt;" + remitente + "&gt;</b> no se encuentra vinculada a ningún usuario activo en el sistema." +
+                "</p>" +
+                "<p style='margin: 0; font-size: 13px; color: #555;'>" +
+                "<b>Comando solicitado:</b> <code style='background: #eee; padding: 2px 6px; border-radius: 3px; color: #c0392b;'>" + comando + "</code>" +
+                "</p>" +
+                "</div>" +
+                "<div style='background-color: #f7f9fc; border: 1px solid #e1e8ed; padding: 18px; border-radius: 6px; margin-top: 15px; max-width: 650px;'>" +
+                "<h4 style='margin: 0 0 10px 0; color: #003366;'>¿Cómo vincular su correo y autorizar sus operaciones?</h4>" +
+                "<p style='font-size: 13px; margin: 0 0 10px 0; color: #444;'>" +
+                "Para iniciar sesión y asociar este buzón de correo a su cuenta institucional, envíe en el <b>Asunto</b> de un nuevo correo:" +
+                "</p>" +
+                "<div style='background-color: #eef2f7; border-left: 4px solid #003366; padding: 12px; font-family: monospace; font-size: 13px; color: #003366; margin-bottom: 10px;'>" +
+                "LOGIN[\"su_correo@institucional.edu.bo\", \"su_contraseña\"]" +
+                "</div>" +
+                "<p style='font-size: 12px; color: #666; margin: 0;'>" +
+                "• <i>Ejemplo Administrador Inicial:</i> <code>LOGIN[\"grupo02sa@tecnoweb.org.bo\", \"admin123\"]</code>" +
+                "</p>" +
+                "<hr style='border: 0; border-top: 1px solid #e1e8ed; margin: 15px 0;'/>" +
+                "<h4 style='margin: 0 0 8px 0; color: #003366;'>Comandos de libre consulta (públicos sin login):</h4>" +
+                "<p style='font-size: 12px; color: #555; margin: 0; line-height: 1.6;'>" +
+                "• <code>HELP[\"*\"]</code> : Manual universal de comandos y sintaxis.<br/>" +
+                "• <code>LISPLA[\"*\"]</code> : Catálogo de planes de estudio vigentes.<br/>" +
+                "• <code>LISASIG[\"*\"]</code> : Malla curricular y asignaturas registradas.<br/>" +
+                "• <code>VERGRAFO[\"idPlan\"]</code> : Grafo analítico de prerrequisitos por niveles." +
+                "</p>" +
+                "</div>" +
+                "<p style='font-size: 11px; color: #888; margin-top: 15px;'>Sistema de Seguimiento al Diseño Curricular - UAGRM TecnoWeb 2026</p>" +
+                "</body></html>";
     }
 
     private String generarPerfilUsuarioHTML(Usuario u) {

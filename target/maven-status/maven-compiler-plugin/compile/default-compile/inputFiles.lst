@@ -11,6 +11,7 @@ L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\dao\PrerrequisitoDAO.j
 L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\dao\ReporteDAO.java
 L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\dao\UsuarioDAO.java
 L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\db\Conexion.java
+L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\db\DatabaseSeeder.java
 L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\email\EmailReceiver.java
 L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\email\EmailSender.java
 L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\Main.java
@@ -26,4 +27,5 @@ L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\modelo\PlanEstudio.jav
 L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\modelo\Prerrequisito.java
 L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\modelo\Rol.java
 L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\modelo\Usuario.java
+L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\seguridad\PasswordHasher.java
 L:\projects 2-2026\TW\email-P\src\main\java\com\curriculo\seguridad\PasswordValidator.java

@@ -3,7 +3,6 @@ package com.curriculo.dao;
 import com.curriculo.db.Conexion;
 import com.curriculo.modelo.DocumentoEvidencia;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,7 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO para gestión del Repositorio Digital de Evidencias, Jerarquía Normativa y Búsqueda Facetada (CU6, RF-11, RF-12, RF-13, RF-14).
+ * DAO para gestión del Repositorio Digital de Evidencias, Jerarquía Normativa y
+ * Búsqueda Facetada (CU6, RF-11, RF-12, RF-13, RF-14).
  */
 public class DocumentoEvidenciaDAO {
 
@@ -21,7 +21,8 @@ public class DocumentoEvidenciaDAO {
                 "fecha_emision, archivo_ruta, vigente, id_documento_padre) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return -1;
+            if (conn == null)
+                return -1;
             try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, d.getCodigoNorma());
                 ps.setString(2, d.getTitulo());
@@ -56,7 +57,8 @@ public class DocumentoEvidenciaDAO {
                 "organo_emisor = ?, fecha_emision = ?, archivo_ruta = ?, vigente = ?, id_documento_padre = ? WHERE id = ?";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, d.getCodigoNorma());
                 ps.setString(2, d.getTitulo());
@@ -83,7 +85,8 @@ public class DocumentoEvidenciaDAO {
     public boolean cambiarVigencia(int id, boolean vigente) {
         String sql = "UPDATE documento_evidencia SET vigente = ? WHERE id = ?";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setBoolean(1, vigente);
                 ps.setInt(2, id);
@@ -105,9 +108,10 @@ public class DocumentoEvidenciaDAO {
                 "ORDER BY d.fecha_emision DESC, d.id DESC";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return lista;
+            if (conn == null)
+                return lista;
             try (PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
+                    ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     DocumentoEvidencia d = mapearDocumento(rs);
                     lista.add(d);
@@ -128,7 +132,8 @@ public class DocumentoEvidenciaDAO {
                 "WHERE d.id = ?";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return null;
+            if (conn == null)
+                return null;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -147,7 +152,8 @@ public class DocumentoEvidenciaDAO {
         String sql = "INSERT INTO evidencia_capitulo(id_capitulo, id_documento_evidencia) VALUES(?, ?) " +
                 "ON CONFLICT (id_capitulo, id_documento_evidencia) DO NOTHING";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, idCapitulo);
                 ps.setInt(2, idDocumento);
@@ -162,7 +168,8 @@ public class DocumentoEvidenciaDAO {
     public boolean desvincularDeCapitulo(int idCapitulo, int idDocumento) {
         String sql = "DELETE FROM evidencia_capitulo WHERE id_capitulo = ? AND id_documento_evidencia = ?";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, idCapitulo);
                 ps.setInt(2, idDocumento);
@@ -186,7 +193,8 @@ public class DocumentoEvidenciaDAO {
                 "ORDER BY d.fecha_emision DESC";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return lista;
+            if (conn == null)
+                return lista;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, idCapitulo);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -203,19 +211,19 @@ public class DocumentoEvidenciaDAO {
 
     /**
      * Motor de Búsqueda Facetada (RF-14).
-     * Permite filtrar por tipo de documento, emisor institucional, código de norma, rango de fechas o capítulo asignado.
+     * Permite filtrar por tipo de documento, emisor institucional, código de norma,
+     * rango de fechas o capítulo asignado.
      */
     public List<DocumentoEvidencia> busquedaFacetada(String criterio, String valor) {
         List<DocumentoEvidencia> lista = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
                 "SELECT DISTINCT d.id, d.codigo_norma, d.titulo, d.tipo_documento, d.organo_emisor, " +
-                "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.fecha_registro, " +
-                "padre.codigo_norma AS padre_codigo, padre.titulo AS padre_titulo " +
-                "FROM documento_evidencia d " +
-                "LEFT JOIN documento_evidencia padre ON d.id_documento_padre = padre.id " +
-                "LEFT JOIN evidencia_capitulo ec ON d.id = ec.id_documento_evidencia " +
-                "WHERE 1=1 "
-        );
+                        "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.fecha_registro, " +
+                        "padre.codigo_norma AS padre_codigo, padre.titulo AS padre_titulo " +
+                        "FROM documento_evidencia d " +
+                        "LEFT JOIN documento_evidencia padre ON d.id_documento_padre = padre.id " +
+                        "LEFT JOIN evidencia_capitulo ec ON d.id = ec.id_documento_evidencia " +
+                        "WHERE 1=1 ");
 
         String crit = criterio != null ? criterio.trim().toUpperCase() : "";
 
@@ -231,13 +239,15 @@ public class DocumentoEvidenciaDAO {
             sql.append("AND d.vigente = ? ");
         } else {
             // Búsqueda libre en código, título u emisor
-            sql.append("AND (LOWER(d.codigo_norma) LIKE LOWER(?) OR LOWER(d.titulo) LIKE LOWER(?) OR LOWER(d.organo_emisor) LIKE LOWER(?)) ");
+            sql.append(
+                    "AND (LOWER(d.codigo_norma) LIKE LOWER(?) OR LOWER(d.titulo) LIKE LOWER(?) OR LOWER(d.organo_emisor) LIKE LOWER(?)) ");
         }
 
         sql.append("ORDER BY d.fecha_emision DESC");
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return lista;
+            if (conn == null)
+                return lista;
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 String likeVal = "%" + valor.trim() + "%";
 
@@ -276,8 +286,7 @@ public class DocumentoEvidenciaDAO {
                 rs.getString("archivo_ruta"),
                 rs.getBoolean("vigente"),
                 (Integer) rs.getObject("id_documento_padre"),
-                rs.getTimestamp("fecha_registro")
-        );
+                rs.getTimestamp("fecha_registro"));
         d.setCodigoNormaPadre(rs.getString("padre_codigo"));
         d.setTituloNormaPadre(rs.getString("padre_titulo"));
         return d;
