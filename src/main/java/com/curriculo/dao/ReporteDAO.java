@@ -188,7 +188,7 @@ public class ReporteDAO {
                     "LEFT JOIN asignacion_capitulo ac ON c.id = ac.id_capitulo " +
                     "LEFT JOIN usuario u ON ac.id_usuario = u.id " +
                     "WHERE comp.id_plan_estudio = ? AND c.id_estado = 4 " + // Estado 4 = Aprobado
-                    "GROUP BY c.id, c.numero, c.titulo, c.contenido, comp.nombre " +
+                    "GROUP BY c.id, c.numero, c.titulo, c.contenido, comp.nombre, comp.numero " +
                     "ORDER BY comp.numero ASC, c.numero ASC";
             try (PreparedStatement ps = conn.prepareStatement(sqlCaps)) {
                 ps.setInt(1, idPlan);

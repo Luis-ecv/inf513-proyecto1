@@ -11,8 +11,10 @@ import java.nio.charset.StandardCharsets;
 import javax.mail.internet.MimeUtility;
 
 /**
- * Receptor de correos electrónicos vía Socket TCP puro sobre protocolo POP3 (puerto 110).
- * Sondea periódicamente el buzón del grupo, analiza los comandos y delega la ejecución.
+ * Receptor de correos electrónicos vía Socket TCP puro sobre protocolo POP3
+ * (puerto 110).
+ * Sondea periódicamente el buzón del grupo, analiza los comandos y delega la
+ * ejecución.
  */
 public class EmailReceiver implements Runnable {
 
@@ -130,7 +132,8 @@ public class EmailReceiver implements Runnable {
             }
         }
 
-        // Decodificación de asunto según RFC 2047 (MIME encoded-words UTF-8 / Base64 / Quoted-Printable)
+        // Decodificación de asunto según RFC 2047 (MIME encoded-words UTF-8 / Base64 /
+        // Quoted-Printable)
         try {
             subject = MimeUtility.decodeText(subject);
         } catch (Exception e) {
@@ -169,9 +172,12 @@ public class EmailReceiver implements Runnable {
 
     private void cerrarRecursos(Socket socket, BufferedReader input, DataOutputStream output) {
         try {
-            if (input != null) input.close();
-            if (output != null) output.close();
-            if (socket != null) socket.close();
+            if (input != null)
+                input.close();
+            if (output != null)
+                output.close();
+            if (socket != null)
+                socket.close();
         } catch (IOException e) {
             System.err.println("Error al cerrar recursos de red POP3: " + e.getMessage());
         }
