@@ -75,7 +75,7 @@ public class EmailReceiver implements Runnable {
             int totalEmails = Integer.parseInt(statParts[1]);
 
             if (totalEmails > 0) {
-                System.out.println("Nuevos correos detectados en el buzón: " + totalEmails);
+                int comandosProcesados = 0;
 
                 for (int i = 1; i <= totalEmails; i++) {
                     enviarComando(output, "RETR " + i + "\r\n");
@@ -89,11 +89,21 @@ public class EmailReceiver implements Runnable {
                         emailBuilder.append(line).append("\n");
                     }
 
-                    procesarMensajeIndividual(emailBuilder.toString());
+                    boolean fueComando = procesarMensajeIndividual(emailBuilder.toString());
 
-                    // Marcar correo como eliminado para no procesarlo reiteradamente
-                    enviarComando(output, "DELE " + i + "\r\n");
-                    input.readLine();
+                    // Solo se elimina del servidor si fue un comando ejecutado por el usuario.
+                    // Las respuestas RE: y notificaciones se preservan intactas en el buzón para
+                    // Thunderbird.
+                    if (fueComando) {
+                        comandosProcesados++;
+                        enviarComando(output, "DELE " + i + "\r\n");
+                        input.readLine();
+                    }
+                }
+
+                if (comandosProcesados > 0) {
+                    System.out.println("Ciclo POP3 finalizado: " + comandosProcesados
+                            + " comando(s) ejecutado(s) y respondido(s).");
                 }
             }
 
@@ -107,7 +117,8 @@ public class EmailReceiver implements Runnable {
         }
     }
 
-    private void procesarMensajeIndividual(String emailRaw) {
+
+    private boolean procesarMensajeIndividual(String emailRaw) {
         String remitente = "";
         String subject = "";
         boolean inSubject = false;
@@ -132,26 +143,26 @@ public class EmailReceiver implements Runnable {
             }
         }
 
-        // Decodificación de asunto según RFC 2047 (MIME encoded-words UTF-8 / Base64 /
-        // Quoted-Printable)
+        // Decodificación de asunto según RFC 2047 (MIME encoded-words UTF-8 / Base64 / Quoted-Printable)
         try {
             subject = MimeUtility.decodeText(subject);
         } catch (Exception e) {
             // Si no se puede decodificar, se conserva el texto original
         }
 
-        System.out.println("Procesando de: [" + remitente + "] | Asunto: [" + subject + "]");
+        String subjectUpper = subject.toUpperCase().trim();
 
-        // Ignorar respuestas automáticas para evitar bucles infinitos
-        if (subject.toUpperCase().startsWith("RE:")) {
-            System.out.println("Mensaje ignorado (es una respuesta automática RE:).");
-            return;
+        // Ignorar respuestas automáticas y notificaciones del sistema para evitar bucles infinitos
+        // Se preservan en el buzón sin eliminarlas (retornando false) para que Thunderbird las descargue
+        if (subjectUpper.startsWith("RE:") || subjectUpper.contains("SEGUIMIENTO CURRICULAR")) {
+            return false;
         }
 
         if (remitente.isEmpty()) {
-            System.err.println("No se pudo extraer el remitente del correo. Omitiendo.");
-            return;
+            return false;
         }
+
+        System.out.println(">>> Procesando comando de: [" + remitente + "] | Asunto: [" + subject + "]");
 
         // Ejecutar comando
         String respuesta = processor.procesar(subject, remitente);
@@ -163,6 +174,8 @@ public class EmailReceiver implements Runnable {
         } else {
             EmailSender.enviar(remitente, subjectRespuesta, respuesta != null ? respuesta : "Operación procesada.");
         }
+
+        return true;
     }
 
     private void enviarComando(DataOutputStream output, String comando) throws IOException {
