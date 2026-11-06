@@ -46,13 +46,15 @@ public class EmailSender {
             if (!validarRespuesta(res, "354", "DATA")) return false;
 
             String subjectCodificado = codificarAsunto(asunto);
-            String cuerpoNormalizado = normalizarCuerpoSMTP(cuerpo);
+            String base64Body = Base64.getMimeEncoder().encodeToString(cuerpo.getBytes(StandardCharsets.UTF_8));
             String contenido = "From: " + Config.MAIL_EMAIL + "\r\n" +
                     "To: " + destinatario + "\r\n" +
                     "Subject: " + subjectCodificado + "\r\n" +
+                    "MIME-Version: 1.0\r\n" +
                     "Content-Type: text/plain; charset=UTF-8\r\n" +
+                    "Content-Transfer-Encoding: base64\r\n" +
                     "\r\n" +
-                    cuerpoNormalizado + "\r\n" +
+                    base64Body + "\r\n" +
                     ".\r\n";
 
             output.write(contenido.getBytes(StandardCharsets.UTF_8));
@@ -103,15 +105,15 @@ public class EmailSender {
             if (!validarRespuesta(res, "354", "DATA")) return false;
 
             String subjectCodificado = codificarAsunto(asunto);
-            String cuerpoNormalizado = normalizarCuerpoSMTP(cuerpoHTML);
+            String base64Body = Base64.getMimeEncoder().encodeToString(cuerpoHTML.getBytes(StandardCharsets.UTF_8));
             String contenido = "From: " + Config.MAIL_EMAIL + "\r\n" +
                     "To: " + destinatario + "\r\n" +
                     "Subject: " + subjectCodificado + "\r\n" +
                     "MIME-Version: 1.0\r\n" +
                     "Content-Type: text/html; charset=UTF-8\r\n" +
-                    "Content-Transfer-Encoding: 8bit\r\n" +
+                    "Content-Transfer-Encoding: base64\r\n" +
                     "\r\n" +
-                    cuerpoNormalizado + "\r\n" +
+                    base64Body + "\r\n" +
                     ".\r\n";
 
             output.write(contenido.getBytes(StandardCharsets.UTF_8));

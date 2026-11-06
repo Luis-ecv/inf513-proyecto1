@@ -2084,15 +2084,15 @@ public class CommandProcessor {
 
     private String generarTablaDocumentosHTML(List<DocumentoEvidencia> docs, String tituloSeccion) {
         StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family: Arial, sans-serif; color: #333; margin: 20px;'>")
-                .append("<div style='background-color: #003366; color: white; padding: 12px; border-radius: 6px;'>")
-                .append("<h2 style='margin: 0;'>").append(tituloSeccion).append("</h2>")
-                .append("<p style='margin: 4px 0 0 0;'>Repositorio Digital de Evidencias Normativas (RF-11 a RF-14)</p>")
-                .append("</div>")
-                .append("<table border='1' cellpadding='8' style='border-collapse: collapse; width: 100%; font-size: 13px; border-color: #ddd; margin-top: 15px;'>")
-                .append("<tr style='background-color: #f2f5f9; color: #003366;'>")
-                .append("<th>ID</th><th>Código Norma</th><th>Título / Descripción</th><th>Tipo</th><th>Órgano Emisor</th><th>Emisión</th><th>Archivo / Enlace de Respaldo</th><th>Vigencia</th><th>Norma Padre</th>")
-                .append("</tr>");
+        sb.append("<html><body style='font-family: Arial, sans-serif; color: #333; margin: 20px;'>\n")
+                .append("<div style='background-color: #003366; color: white; padding: 12px; border-radius: 6px;'>\n")
+                .append("<h2 style='margin: 0;'>").append(tituloSeccion).append("</h2>\n")
+                .append("<p style='margin: 4px 0 0 0;'>Repositorio Digital de Evidencias Normativas (RF-11 a RF-14)</p>\n")
+                .append("</div>\n")
+                .append("<table border='1' cellpadding='8' style='border-collapse: collapse; width: 100%; font-size: 13px; border-color: #ddd; margin-top: 15px;'>\n")
+                .append("<tr style='background-color: #f2f5f9; color: #003366;'>\n")
+                .append("<th>ID</th><th>Código Norma</th><th>Título / Descripción</th><th>Tipo</th><th>Órgano Emisor</th><th>Emisión</th><th>Archivo / Enlace de Respaldo</th><th>Vigencia</th><th>Norma Padre</th>\n")
+                .append("</tr>\n");
 
         for (DocumentoEvidencia d : docs) {
             String vigenciaBadge = d.isVigente()
@@ -2110,20 +2110,20 @@ public class CommandProcessor {
                         + (ruta.isEmpty() ? "storage/documentos/sin_archivo.pdf" : ruta) + "</span>";
             }
 
-            sb.append("<tr>")
-                    .append("<td align='center'>").append(d.getId()).append("</td>")
-                    .append("<td><b>").append(d.getCodigoNorma()).append("</b></td>")
-                    .append("<td>").append(d.getTitulo()).append("</td>")
-                    .append("<td align='center'>").append(d.getTipoDocumento()).append("</td>")
-                    .append("<td>").append(d.getOrganoEmisor()).append("</td>")
-                    .append("<td align='center'>").append(d.getFechaEmision()).append("</td>")
-                    .append("<td align='center'>").append(enlaceHtml).append("</td>")
-                    .append("<td align='center'>").append(vigenciaBadge).append("</td>")
-                    .append("<td align='center'>").append(padreInfo).append("</td>")
-                    .append("</tr>");
+            sb.append("<tr>\n")
+                    .append("<td align='center'>").append(d.getId()).append("</td>\n")
+                    .append("<td><b>").append(d.getCodigoNorma()).append("</b></td>\n")
+                    .append("<td>").append(d.getTitulo()).append("</td>\n")
+                    .append("<td align='center'>").append(d.getTipoDocumento()).append("</td>\n")
+                    .append("<td>").append(d.getOrganoEmisor()).append("</td>\n")
+                    .append("<td align='center'>").append(d.getFechaEmision()).append("</td>\n")
+                    .append("<td align='center'>").append(enlaceHtml).append("</td>\n")
+                    .append("<td align='center'>").append(vigenciaBadge).append("</td>\n")
+                    .append("<td align='center'>").append(padreInfo).append("</td>\n")
+                    .append("</tr>\n");
         }
 
-        sb.append("</table></body></html>");
+        sb.append("</table>\n</body></html>\n");
         return sb.toString();
     }
 
