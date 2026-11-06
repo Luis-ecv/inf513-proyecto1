@@ -1,0 +1,38 @@
+# ==========================================
+# Compilación y Binarios de Maven
+# ==========================================
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# ==========================================
+# Directivas y Configuración de Agentes IA
+# ==========================================
+.agents/
+
+# ==========================================
+# Entornos de Desarrollo (IDEs)
+# ==========================================
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# ==========================================
+# Archivos de Registro y Temporales
+# ==========================================
+*.log
+*.tmp
+*.bak
+nohup.out
+
+# ==========================================
+# Basura del Sistema Operativo
+# ==========================================
+Thumbs.db
+.DS_Store
+
