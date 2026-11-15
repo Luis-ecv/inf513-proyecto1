@@ -2,13 +2,15 @@ package com.curriculo.config;
 
 /**
  * Gestor centralizado de configuración del sistema.
- * Permite sobreescribir valores mediante variables de entorno o propiedades del sistema,
+ * Permite sobreescribir valores mediante variables de entorno o propiedades del
+ * sistema,
  * manteniendo por defecto las credenciales oficiales de la plataforma TecnoWeb.
  */
 public class Config {
 
     // Servidor de correo electrónico (POP3 y SMTP)
     public static final String MAIL_HOST = getEnv("MAIL_HOST", "www.tecnoweb.org.bo");
+    // public static final String MAIL_HOST = getEnv("MAIL_HOST", "139.99.68.169");
     public static final int POP3_PORT = getEnvInt("POP3_PORT", 110);
     public static final int SMTP_PORT = getEnvInt("SMTP_PORT", 25);
     public static final String MAIL_USER = getEnv("MAIL_USER", "grupo02sa");
@@ -17,6 +19,7 @@ public class Config {
 
     // Servidor de Base de Datos PostgreSQL
     public static final String DB_HOST = getEnv("DB_HOST", "db.tecnoweb.org.bo");
+    // public static final String DB_HOST = getEnv("DB_HOST", "139.99.68.169");
     public static final String DB_PORT = getEnv("DB_PORT", "5432");
     public static final String DB_NAME = getEnv("DB_NAME", "db_grupo02sa");
     public static final String DB_USER = getEnv("DB_USER", "grupo02sa");

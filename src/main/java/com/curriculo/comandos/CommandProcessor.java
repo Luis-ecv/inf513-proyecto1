@@ -23,6 +23,8 @@ import com.curriculo.modelo.Prerrequisito;
 import com.curriculo.modelo.Usuario;
 import com.curriculo.seguridad.PasswordHasher;
 import com.curriculo.seguridad.PasswordValidator;
+import com.curriculo.util.ImageHelper;
+import java.io.File;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
@@ -1756,6 +1758,8 @@ public class CommandProcessor {
 
     private String generarTablaUsuariosHTML(List<Usuario> usuarios) {
         StringBuilder sb = new StringBuilder();
+        StringBuilder sbAdjuntos = new StringBuilder();
+
         sb.append("<html><body style='font-family: Arial, sans-serif; color: #333; margin: 20px;'>")
                 .append("<div style='background-color: #003366; color: white; padding: 12px 15px; border-radius: 6px;'>")
                 .append("<h2 style='margin: 0;'>Listado de Usuarios Registrados</h2>")
@@ -1772,11 +1776,26 @@ public class CommandProcessor {
                     + "; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 11px;'>"
                     + (u.getNombreRol() != null ? u.getNombreRol() : "Rol " + u.getIdRol()) + "</span>";
 
-            String fotoHtml;
+            String fotoHtml = null;
             String rutaFoto = u.getFotoRuta() != null ? u.getFotoRuta().trim() : "";
+
             if (rutaFoto.startsWith("http://") || rutaFoto.startsWith("https://")) {
                 fotoHtml = "<img src='" + rutaFoto + "' alt='Foto' width='36' height='36' style='border-radius: 50%; object-fit: cover; border: 1px solid #ccc;'/>";
-            } else {
+            } else if (!rutaFoto.isEmpty() && !rutaFoto.equalsIgnoreCase("fotos/default.png")) {
+                // Intentar resolver la imagen local del servidor y optimizar a miniatura 72x72 px
+                File archivoFoto = ImageHelper.resolverArchivoFoto(rutaFoto);
+                if (archivoFoto != null) {
+                    String b64Miniatura = ImageHelper.generarMiniaturaBase64(archivoFoto, 72, 72);
+                    if (b64Miniatura != null && !b64Miniatura.isEmpty()) {
+                        String cid = "user_photo_" + u.getId();
+                        fotoHtml = "<img src='cid:" + cid + "' alt='Foto' width='36' height='36' style='border-radius: 50%; object-fit: cover; border: 1px solid #ccc;'/>";
+                        sbAdjuntos.append("<!--CID_ATTACH:").append(cid).append(":").append(b64Miniatura).append("-->");
+                    }
+                }
+            }
+
+            // Fallback seguro: si no es URL o no se encontró/pudo procesar el archivo físico, generar Avatar Circular CSS
+            if (fotoHtml == null) {
                 String iniciales = obtenerIniciales(u.getNombreCompleto());
                 fotoHtml = "<div style='display: inline-block; width: 36px; height: 36px; line-height: 36px; border-radius: 50%; background-color: "
                         + rolColor + "; color: white; font-weight: bold; text-align: center; font-size: 13px;'>"
@@ -1800,7 +1819,11 @@ public class CommandProcessor {
                     .append("</tr>");
         }
 
-        sb.append("</table></body></html>");
+        sb.append("</table>");
+        if (sbAdjuntos.length() > 0) {
+            sb.append(sbAdjuntos);
+        }
+        sb.append("</body></html>");
         return sb.toString();
     }
 

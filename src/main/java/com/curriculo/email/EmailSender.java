@@ -8,6 +8,10 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Cliente SMTP de bajo nivel mediante Sockets TCP puros (puerto 25).
@@ -105,18 +109,74 @@ public class EmailSender {
             if (!validarRespuesta(res, "354", "DATA")) return false;
 
             String subjectCodificado = codificarAsunto(asunto);
-            String base64Body = Base64.getMimeEncoder().encodeToString(cuerpoHTML.getBytes(StandardCharsets.UTF_8));
-            String contenido = "From: " + Config.MAIL_EMAIL + "\r\n" +
-                    "To: " + destinatario + "\r\n" +
-                    "Subject: " + subjectCodificado + "\r\n" +
-                    "MIME-Version: 1.0\r\n" +
-                    "Content-Type: text/html; charset=UTF-8\r\n" +
-                    "Content-Transfer-Encoding: base64\r\n" +
-                    "\r\n" +
-                    base64Body + "\r\n" +
-                    ".\r\n";
+            StringBuilder sbContenido = new StringBuilder();
 
-            output.write(contenido.getBytes(StandardCharsets.UTF_8));
+            // Verificar si el cuerpo contiene imágenes inline para incrustar mediante MIME con CID
+            if (cuerpoHTML != null && cuerpoHTML.contains("<!--CID_ATTACH:")) {
+                Map<String, String> imagenesCid = new LinkedHashMap<>();
+                Pattern p = Pattern.compile("<!--CID_ATTACH:([a-zA-Z0-9_-]+):([A-Za-z0-9+/=\r\n]+)-->");
+                Matcher m = p.matcher(cuerpoHTML);
+                while (m.find()) {
+                    imagenesCid.put(m.group(1), m.group(2).replaceAll("\\s+", ""));
+                }
+                String cuerpoLimpio = m.replaceAll("");
+
+                String boundary = "----=_Part_Curriculo_" + System.currentTimeMillis();
+                String base64Body = Base64.getMimeEncoder().encodeToString(cuerpoLimpio.getBytes(StandardCharsets.UTF_8));
+
+                sbContenido.append("From: ").append(Config.MAIL_EMAIL).append("\r\n");
+                sbContenido.append("To: ").append(destinatario).append("\r\n");
+                sbContenido.append("Subject: ").append(subjectCodificado).append("\r\n");
+                sbContenido.append("MIME-Version: 1.0\r\n");
+                sbContenido.append("X-Mailer: SeguimientoCurricularBot/1.0\r\n");
+                sbContenido.append("Auto-Submitted: auto-generated\r\n");
+                sbContenido.append("Content-Type: multipart/related; boundary=\"").append(boundary).append("\"\r\n");
+                sbContenido.append("\r\n");
+
+                // Parte 1: Cuerpo HTML
+                sbContenido.append("--").append(boundary).append("\r\n");
+                sbContenido.append("Content-Type: text/html; charset=UTF-8\r\n");
+                sbContenido.append("Content-Transfer-Encoding: base64\r\n");
+                sbContenido.append("\r\n");
+                sbContenido.append(base64Body).append("\r\n");
+
+                // Partes 2..N: Imágenes inline con Content-ID (CID)
+                for (Map.Entry<String, String> entry : imagenesCid.entrySet()) {
+                    String cid = entry.getKey();
+                    String b64Img = entry.getValue();
+
+                    sbContenido.append("--").append(boundary).append("\r\n");
+                    sbContenido.append("Content-Type: image/png\r\n");
+                    sbContenido.append("Content-Transfer-Encoding: base64\r\n");
+                    sbContenido.append("Content-ID: <").append(cid).append(">\r\n");
+                    sbContenido.append("Content-Disposition: inline; filename=\"").append(cid).append(".png\"\r\n");
+                    sbContenido.append("\r\n");
+
+                    // Dividir Base64 en líneas de hasta 76 caracteres (estándar RFC 2045)
+                    for (int i = 0; i < b64Img.length(); i += 76) {
+                        sbContenido.append(b64Img.substring(i, Math.min(i + 76, b64Img.length()))).append("\r\n");
+                    }
+                }
+
+                sbContenido.append("--").append(boundary).append("--\r\n");
+                sbContenido.append(".\r\n");
+            } else {
+                // Flujo estándar para correos HTML sin imágenes locales inline
+                String base64Body = Base64.getMimeEncoder().encodeToString(cuerpoHTML.getBytes(StandardCharsets.UTF_8));
+                sbContenido.append("From: ").append(Config.MAIL_EMAIL).append("\r\n");
+                sbContenido.append("To: ").append(destinatario).append("\r\n");
+                sbContenido.append("Subject: ").append(subjectCodificado).append("\r\n");
+                sbContenido.append("MIME-Version: 1.0\r\n");
+                sbContenido.append("X-Mailer: SeguimientoCurricularBot/1.0\r\n");
+                sbContenido.append("Auto-Submitted: auto-generated\r\n");
+                sbContenido.append("Content-Type: text/html; charset=UTF-8\r\n");
+                sbContenido.append("Content-Transfer-Encoding: base64\r\n");
+                sbContenido.append("\r\n");
+                sbContenido.append(base64Body).append("\r\n");
+                sbContenido.append(".\r\n");
+            }
+
+            output.write(sbContenido.toString().getBytes(StandardCharsets.UTF_8));
             output.flush();
             res = input.readLine();
             if (!validarRespuesta(res, "250", "Envío de Cuerpo HTML")) return false;
