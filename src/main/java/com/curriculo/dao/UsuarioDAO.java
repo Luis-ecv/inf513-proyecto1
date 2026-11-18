@@ -19,7 +19,7 @@ public class UsuarioDAO {
 
     public List<Usuario> listar() {
         List<Usuario> lista = new ArrayList<>();
-        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password_hash, " +
+        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password, " +
                 "u.foto_ruta, u.activo, u.fecha_registro, u.id_rol, r.nombre AS rol_nombre " +
                 "FROM usuario u " +
                 "JOIN rol r ON u.id_rol = r.id " +
@@ -36,7 +36,7 @@ public class UsuarioDAO {
                             rs.getString("nombre_completo"),
                             rs.getString("email"),
                             rs.getString("username"),
-                            rs.getString("password_hash"),
+                            rs.getString("password"),
                             rs.getString("foto_ruta"),
                             rs.getBoolean("activo"),
                             rs.getTimestamp("fecha_registro"),
@@ -53,7 +53,7 @@ public class UsuarioDAO {
     }
 
     public int insertar(Usuario u) {
-        String sql = "INSERT INTO usuario(nombre_completo, email, username, password_hash, foto_ruta, id_rol) " +
+        String sql = "INSERT INTO usuario(nombre_completo, email, username, password, foto_ruta, id_rol) " +
                 "VALUES(?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = Conexion.getConnection()) {
@@ -83,7 +83,7 @@ public class UsuarioDAO {
 
     public boolean actualizar(Usuario u) {
         String sql = "UPDATE usuario SET nombre_completo = ?, email = ?, username = ?, " +
-                "password_hash = ?, foto_ruta = ?, id_rol = ?, activo = ? WHERE id = ?";
+                "password = ?, foto_ruta = ?, id_rol = ?, activo = ? WHERE id = ?";
 
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null) return false;
@@ -109,7 +109,8 @@ public class UsuarioDAO {
         String sql = "DELETE FROM usuario WHERE id = ?";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, id);
                 return ps.executeUpdate() > 0;
@@ -121,7 +122,7 @@ public class UsuarioDAO {
     }
 
     public Usuario obtenerPorEmail(String email) {
-        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password_hash, " +
+        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password, " +
                 "u.foto_ruta, u.activo, u.fecha_registro, u.id_rol, r.nombre AS rol_nombre " +
                 "FROM usuario u " +
                 "JOIN rol r ON u.id_rol = r.id " +
@@ -144,7 +145,7 @@ public class UsuarioDAO {
     }
 
     public Usuario obtenerPorUsername(String username) {
-        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password_hash, " +
+        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password, " +
                 "u.foto_ruta, u.activo, u.fecha_registro, u.id_rol, r.nombre AS rol_nombre " +
                 "FROM usuario u " +
                 "JOIN rol r ON u.id_rol = r.id " +
@@ -167,11 +168,11 @@ public class UsuarioDAO {
     }
 
     public Usuario autenticar(String email, String password) {
-        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password_hash, " +
+        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password, " +
                 "u.foto_ruta, u.activo, u.fecha_registro, u.id_rol, r.nombre AS rol_nombre " +
                 "FROM usuario u " +
                 "JOIN rol r ON u.id_rol = r.id " +
-                "WHERE u.email = ? AND (u.password_hash = ? OR u.password_hash = ?) AND u.activo = true";
+                "WHERE u.email = ? AND (u.password = ? OR u.password = ?) AND u.activo = true";
 
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null) return null;
@@ -194,7 +195,8 @@ public class UsuarioDAO {
     public boolean asociarEmail(int idUsuario, String email) {
         String sql = "UPDATE usuario SET email = ? WHERE id = ?";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, email);
                 ps.setInt(2, idUsuario);
@@ -212,12 +214,11 @@ public class UsuarioDAO {
                 rs.getString("nombre_completo"),
                 rs.getString("email"),
                 rs.getString("username"),
-                rs.getString("password_hash"),
+                rs.getString("password"),
                 rs.getString("foto_ruta"),
                 rs.getBoolean("activo"),
                 rs.getTimestamp("fecha_registro"),
                 rs.getInt("id_rol"),
-                rs.getString("rol_nombre")
-        );
+                rs.getString("rol_nombre"));
     }
 }

@@ -12,7 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO para gestión de Capítulos y Asignación de Responsables de Redacción (CU4, RF-05, RF-06).
+ * DAO para gestión de Capítulos y Asignación de Responsables de Redacción (CU4,
+ * RF-05, RF-06).
  */
 public class CapituloDAO {
 
@@ -31,7 +32,8 @@ public class CapituloDAO {
                 "ORDER BY c.numero ASC";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return lista;
+            if (conn == null)
+                return lista;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, idComponente);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -43,8 +45,7 @@ public class CapituloDAO {
                                 rs.getString("contenido"),
                                 rs.getInt("id_componente"),
                                 rs.getInt("id_estado"),
-                                rs.getTimestamp("fecha_creacion")
-                        );
+                                rs.getTimestamp("fecha_creacion"));
                         cap.setNombreComponente(rs.getString("componente_nombre"));
                         cap.setNombreEstado(rs.getString("estado_nombre"));
                         cap.setResponsables(rs.getString("responsables"));
@@ -72,9 +73,10 @@ public class CapituloDAO {
                 "ORDER BY c.id_componente ASC, c.numero ASC";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return lista;
+            if (conn == null)
+                return lista;
             try (PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
+                    ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Capitulo cap = new Capitulo(
                             rs.getInt("id"),
@@ -83,8 +85,7 @@ public class CapituloDAO {
                             rs.getString("contenido"),
                             rs.getInt("id_componente"),
                             rs.getInt("id_estado"),
-                            rs.getTimestamp("fecha_creacion")
-                    );
+                            rs.getTimestamp("fecha_creacion"));
                     cap.setNombreComponente(rs.getString("componente_nombre"));
                     cap.setNombreEstado(rs.getString("estado_nombre"));
                     cap.setResponsables(rs.getString("responsables"));
@@ -100,7 +101,8 @@ public class CapituloDAO {
     public int insertar(Capitulo c) {
         String sql = "INSERT INTO capitulo(numero, titulo, contenido, id_componente, id_estado) VALUES(?, ?, ?, ?, ?)";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return -1;
+            if (conn == null)
+                return -1;
             try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, c.getNumero());
                 ps.setString(2, c.getTitulo());
@@ -126,7 +128,8 @@ public class CapituloDAO {
     public boolean actualizar(Capitulo c) {
         String sql = "UPDATE capitulo SET numero = ?, titulo = ?, contenido = ?, id_componente = ? WHERE id = ?";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, c.getNumero());
                 ps.setString(2, c.getTitulo());
@@ -144,7 +147,8 @@ public class CapituloDAO {
     public boolean eliminar(int id) {
         String sql = "DELETE FROM capitulo WHERE id = ?";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, id);
                 return ps.executeUpdate() > 0;
@@ -168,7 +172,8 @@ public class CapituloDAO {
                 "GROUP BY c.id, comp.nombre, e.nombre";
 
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return null;
+            if (conn == null)
+                return null;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -180,8 +185,7 @@ public class CapituloDAO {
                                 rs.getString("contenido"),
                                 rs.getInt("id_componente"),
                                 rs.getInt("id_estado"),
-                                rs.getTimestamp("fecha_creacion")
-                        );
+                                rs.getTimestamp("fecha_creacion"));
                         cap.setNombreComponente(rs.getString("componente_nombre"));
                         cap.setNombreEstado(rs.getString("estado_nombre"));
                         cap.setResponsables(rs.getString("responsables"));
@@ -199,7 +203,8 @@ public class CapituloDAO {
         String sql = "INSERT INTO asignacion_capitulo(id_capitulo, id_usuario) VALUES(?, ?) " +
                 "ON CONFLICT (id_capitulo, id_usuario) DO NOTHING";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, idCapitulo);
                 ps.setInt(2, idUsuario);
@@ -214,7 +219,8 @@ public class CapituloDAO {
     public boolean removerRedactor(int idCapitulo, int idUsuario) {
         String sql = "DELETE FROM asignacion_capitulo WHERE id_capitulo = ? AND id_usuario = ?";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, idCapitulo);
                 ps.setInt(2, idUsuario);
@@ -228,7 +234,7 @@ public class CapituloDAO {
 
     public List<Usuario> listarRedactores(int idCapitulo) {
         List<Usuario> lista = new ArrayList<>();
-        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password_hash, " +
+        String sql = "SELECT u.id, u.nombre_completo, u.email, u.username, u.password, " +
                 "u.foto_ruta, u.activo, u.fecha_registro, u.id_rol, r.nombre AS rol_nombre " +
                 "FROM asignacion_capitulo ac " +
                 "JOIN usuario u ON ac.id_usuario = u.id " +
@@ -246,7 +252,7 @@ public class CapituloDAO {
                                 rs.getString("nombre_completo"),
                                 rs.getString("email"),
                                 rs.getString("username"),
-                                rs.getString("password_hash"),
+                                rs.getString("password"),
                                 rs.getString("foto_ruta"),
                                 rs.getBoolean("activo"),
                                 rs.getTimestamp("fecha_registro"),
@@ -266,7 +272,8 @@ public class CapituloDAO {
     public boolean cambiarEstado(int idCapitulo, int nuevoEstadoId) {
         String sql = "UPDATE capitulo SET id_estado = ? WHERE id = ?";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return false;
+            if (conn == null)
+                return false;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, nuevoEstadoId);
                 ps.setInt(2, idCapitulo);
@@ -281,7 +288,8 @@ public class CapituloDAO {
     public int contarEvidencias(int idCapitulo) {
         String sql = "SELECT COUNT(*) FROM evidencia_capitulo WHERE id_capitulo = ?";
         try (Connection conn = Conexion.getConnection()) {
-            if (conn == null) return 0;
+            if (conn == null)
+                return 0;
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, idCapitulo);
                 try (ResultSet rs = ps.executeQuery()) {

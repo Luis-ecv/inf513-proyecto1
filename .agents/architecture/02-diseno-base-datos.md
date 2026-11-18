@@ -45,7 +45,7 @@ CREATE TABLE usuario (
     nombre_completo VARCHAR(120) NOT NULL,
     email           VARCHAR(150) NOT NULL UNIQUE,
     username        VARCHAR(50)  NOT NULL UNIQUE,
-    password_hash   VARCHAR(255) NOT NULL,
+    password        VARCHAR(255) NOT NULL,
     foto_ruta       VARCHAR(500),
     activo          BOOLEAN      NOT NULL DEFAULT TRUE,
     fecha_registro  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -279,6 +279,6 @@ INSERT INTO estado_capitulo (nombre, descripcion) VALUES
 ('Aprobado', 'Validado formalmente con observaciones subsanadas y evidencias adjuntas');
 
 -- Usuario Administrador / Director Inicial
-INSERT INTO usuario (nombre_completo, email, username, password_hash, foto_ruta, id_rol) VALUES
+INSERT INTO usuario (nombre_completo, email, username, password, foto_ruta, id_rol) VALUES
 ('Ing. Evans Balcazar', 'grupo02sa@tecnoweb.org.bo', 'director', 'admin123', 'fotos/director.png', 1);
 ```
