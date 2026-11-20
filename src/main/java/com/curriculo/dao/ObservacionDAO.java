@@ -17,7 +17,8 @@ import java.util.List;
 public class ObservacionDAO {
 
     public int insertar(Observacion o) {
-        String sql = "INSERT INTO observacion(comentario, id_capitulo, id_usuario_observador, created_at, updated_at) " +
+        String sql = "INSERT INTO observacion(comentario, id_capitulo, id_usuario_observador, created_at, updated_at) "
+                +
                 "VALUES(?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null)
@@ -80,6 +81,9 @@ public class ObservacionDAO {
                 ps.setInt(1, idCapitulo);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
+                        Object respObj = rs.getObject("id_usuario_respuesta");
+                        Integer idResp = (respObj instanceof Number) ? ((Number) respObj).intValue() : null;
+
                         Observacion o = new Observacion(
                                 rs.getInt("id"),
                                 rs.getString("comentario"),
@@ -90,7 +94,7 @@ public class ObservacionDAO {
                                 rs.getTimestamp("fecha_cierre"),
                                 rs.getInt("id_capitulo"),
                                 rs.getInt("id_usuario_observador"),
-                                (Integer) rs.getObject("id_usuario_respuesta"));
+                                idResp);
                         o.setNombreObservador(rs.getString("observador_nombre"));
                         o.setNombreRespuesta(rs.getString("delegado_nombre"));
                         o.setTituloCapitulo(rs.getString("capitulo_titulo"));
@@ -145,6 +149,9 @@ public class ObservacionDAO {
                 ps.setInt(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
+                        Object respObj = rs.getObject("id_usuario_respuesta");
+                        Integer idResp = (respObj instanceof Number) ? ((Number) respObj).intValue() : null;
+
                         Observacion o = new Observacion(
                                 rs.getInt("id"),
                                 rs.getString("comentario"),
@@ -155,7 +162,7 @@ public class ObservacionDAO {
                                 rs.getTimestamp("fecha_cierre"),
                                 rs.getInt("id_capitulo"),
                                 rs.getInt("id_usuario_observador"),
-                                (Integer) rs.getObject("id_usuario_respuesta"));
+                                idResp);
                         o.setNombreObservador(rs.getString("observador_nombre"));
                         o.setNombreRespuesta(rs.getString("delegado_nombre"));
                         o.setTituloCapitulo(rs.getString("capitulo_titulo"));

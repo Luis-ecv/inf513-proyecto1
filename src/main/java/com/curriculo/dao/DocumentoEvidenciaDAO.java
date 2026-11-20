@@ -219,7 +219,8 @@ public class DocumentoEvidenciaDAO {
         List<DocumentoEvidencia> lista = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
                 "SELECT DISTINCT d.id, d.codigo_norma, d.titulo, d.tipo_documento, d.organo_emisor, " +
-                        "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.created_at AS fecha_registro, " +
+                        "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.created_at AS fecha_registro, "
+                        +
                         "padre.codigo_norma AS padre_codigo, padre.titulo AS padre_titulo " +
                         "FROM documento_evidencia d " +
                         "LEFT JOIN documento_evidencia padre ON d.id_documento_padre = padre.id " +
@@ -277,6 +278,9 @@ public class DocumentoEvidenciaDAO {
     }
 
     private DocumentoEvidencia mapearDocumento(ResultSet rs) throws SQLException {
+        Object padreObj = rs.getObject("id_documento_padre");
+        Integer idPadre = (padreObj instanceof Number) ? ((Number) padreObj).intValue() : null;
+
         DocumentoEvidencia d = new DocumentoEvidencia(
                 rs.getInt("id"),
                 rs.getString("codigo_norma"),
@@ -286,7 +290,7 @@ public class DocumentoEvidenciaDAO {
                 rs.getDate("fecha_emision"),
                 rs.getString("archivo_ruta"),
                 rs.getBoolean("vigente"),
-                (Integer) rs.getObject("id_documento_padre"),
+                idPadre,
                 rs.getTimestamp("fecha_registro"));
         d.setCodigoNormaPadre(rs.getString("padre_codigo"));
         d.setTituloNormaPadre(rs.getString("padre_titulo"));
