@@ -106,7 +106,7 @@ public class CommandProcessor {
             // =========================================================================
             // CU1: GESTIÓN DE USUARIOS
             // =========================================================================
-            if (commandUpper.startsWith("LISUSUARIO")) {
+            if (commandUpper.startsWith("LISUSU")) {
                 List<Usuario> usuarios = usuarioDAO.listar();
                 if (usuarios.isEmpty()) {
                     return "No existen usuarios registrados en el sistema.";
