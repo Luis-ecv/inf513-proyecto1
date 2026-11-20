@@ -19,7 +19,7 @@ public class CapituloDAO {
 
     public List<Capitulo> listarPorComponente(int idComponente) {
         List<Capitulo> lista = new ArrayList<>();
-        String sql = "SELECT c.id, c.numero, c.titulo, c.contenido, c.id_componente, c.id_estado, c.fecha_creacion, " +
+        String sql = "SELECT c.id, c.numero, c.titulo, c.contenido, c.id_componente, c.id_estado, c.created_at AS fecha_creacion, " +
                 "comp.nombre AS componente_nombre, e.nombre AS estado_nombre, " +
                 "COALESCE(STRING_AGG(u.nombre_completo, ', '), 'Sin asignar') AS responsables " +
                 "FROM capitulo c " +
@@ -61,7 +61,7 @@ public class CapituloDAO {
 
     public List<Capitulo> listarTodos() {
         List<Capitulo> lista = new ArrayList<>();
-        String sql = "SELECT c.id, c.numero, c.titulo, c.contenido, c.id_componente, c.id_estado, c.fecha_creacion, " +
+        String sql = "SELECT c.id, c.numero, c.titulo, c.contenido, c.id_componente, c.id_estado, c.created_at AS fecha_creacion, " +
                 "comp.nombre AS componente_nombre, e.nombre AS estado_nombre, " +
                 "COALESCE(STRING_AGG(u.nombre_completo, ', '), 'Sin asignar') AS responsables " +
                 "FROM capitulo c " +
@@ -99,7 +99,8 @@ public class CapituloDAO {
     }
 
     public int insertar(Capitulo c) {
-        String sql = "INSERT INTO capitulo(numero, titulo, contenido, id_componente, id_estado) VALUES(?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO capitulo(numero, titulo, contenido, id_componente, id_estado, created_at, updated_at) " +
+                "VALUES(?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null)
                 return -1;
@@ -126,7 +127,7 @@ public class CapituloDAO {
     }
 
     public boolean actualizar(Capitulo c) {
-        String sql = "UPDATE capitulo SET numero = ?, titulo = ?, contenido = ?, id_componente = ? WHERE id = ?";
+        String sql = "UPDATE capitulo SET numero = ?, titulo = ?, contenido = ?, id_componente = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null)
                 return false;
@@ -160,7 +161,7 @@ public class CapituloDAO {
     }
 
     public Capitulo obtenerPorId(int id) {
-        String sql = "SELECT c.id, c.numero, c.titulo, c.contenido, c.id_componente, c.id_estado, c.fecha_creacion, " +
+        String sql = "SELECT c.id, c.numero, c.titulo, c.contenido, c.id_componente, c.id_estado, c.created_at AS fecha_creacion, " +
                 "comp.nombre AS componente_nombre, e.nombre AS estado_nombre, " +
                 "COALESCE(STRING_AGG(u.nombre_completo, ', '), 'Sin asignar') AS responsables " +
                 "FROM capitulo c " +
@@ -270,7 +271,7 @@ public class CapituloDAO {
     }
 
     public boolean cambiarEstado(int idCapitulo, int nuevoEstadoId) {
-        String sql = "UPDATE capitulo SET id_estado = ? WHERE id = ?";
+        String sql = "UPDATE capitulo SET id_estado = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null)
                 return false;

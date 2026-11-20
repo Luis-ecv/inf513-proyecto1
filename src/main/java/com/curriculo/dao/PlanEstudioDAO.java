@@ -18,7 +18,7 @@ public class PlanEstudioDAO {
     public List<PlanEstudio> listar() {
         List<PlanEstudio> lista = new ArrayList<>();
         String sql = "SELECT id, codigo, carrera, anio_vigencia, descripcion, objetivos, " +
-                "perfil_egreso, limite_creditos_min, limite_creditos_max, estado, fecha_creacion " +
+                "perfil_egreso, limite_creditos_min, limite_creditos_max, estado, created_at AS fecha_creacion " +
                 "FROM plan_estudio " +
                 "ORDER BY anio_vigencia DESC, id DESC";
 
@@ -52,8 +52,8 @@ public class PlanEstudioDAO {
 
     public int insertar(PlanEstudio p) {
         String sql = "INSERT INTO plan_estudio(codigo, carrera, anio_vigencia, descripcion, " +
-                "objetivos, perfil_egreso, limite_creditos_min, limite_creditos_max) " +
-                "VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+                "objetivos, perfil_egreso, limite_creditos_min, limite_creditos_max, created_at, updated_at) " +
+                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
 
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null) return -1;
@@ -85,7 +85,7 @@ public class PlanEstudioDAO {
     public boolean actualizar(PlanEstudio p) {
         String sql = "UPDATE plan_estudio SET codigo = ?, carrera = ?, anio_vigencia = ?, " +
                 "descripcion = ?, objetivos = ?, perfil_egreso = ?, limite_creditos_min = ?, " +
-                "limite_creditos_max = ?, estado = ? WHERE id = ?";
+                "limite_creditos_max = ?, estado = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
 
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null) return false;
@@ -111,7 +111,7 @@ public class PlanEstudioDAO {
 
     public PlanEstudio obtenerPorId(int id) {
         String sql = "SELECT id, codigo, carrera, anio_vigencia, descripcion, objetivos, " +
-                "perfil_egreso, limite_creditos_min, limite_creditos_max, estado, fecha_creacion " +
+                "perfil_egreso, limite_creditos_min, limite_creditos_max, estado, created_at AS fecha_creacion " +
                 "FROM plan_estudio WHERE id = ?";
 
         try (Connection conn = Conexion.getConnection()) {

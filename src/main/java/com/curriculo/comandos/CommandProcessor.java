@@ -24,6 +24,7 @@ import com.curriculo.modelo.Usuario;
 import com.curriculo.seguridad.PasswordHasher;
 import com.curriculo.seguridad.PasswordValidator;
 import com.curriculo.util.ImageHelper;
+import com.curriculo.util.LoggerService;
 import java.io.File;
 import java.sql.Date;
 import java.util.ArrayList;
@@ -74,7 +75,9 @@ public class CommandProcessor {
                             "Se esperaban 2 parámetros obligatorios (correo electrónico y contraseña).",
                             new String[][] {
                                     { "Formato Requerido", "LOGIN[\"email\", \"password\"]" },
-                                    { "Ejemplo Válido", "LOGIN[\"admin@uagrm.edu.bo\", \"" + PasswordValidator.EJEMPLO_VALIDO + "\"]" }
+                                    { "Ejemplo Válido",
+                                            "LOGIN[\"admin@uagrm.edu.bo\", \"" + PasswordValidator.EJEMPLO_VALIDO
+                                                    + "\"]" }
                             }, "HELP[\"*\"]");
                 }
                 String email = p[0].trim();
@@ -96,13 +99,14 @@ public class CommandProcessor {
             // Verificación de autorización por rol según la cuenta del remitente
             String errorPermiso = verificarPermisos(commandUpper, remitente);
             if (errorPermiso != null) {
+                LoggerService.error(remitente, subject, "Acceso denegado o permisos insuficientes por rol", null);
                 return errorPermiso;
             }
 
             // =========================================================================
             // CU1: GESTIÓN DE USUARIOS
             // =========================================================================
-            if (commandUpper.startsWith("LISUSU")) {
+            if (commandUpper.startsWith("LISUSUARIO")) {
                 List<Usuario> usuarios = usuarioDAO.listar();
                 if (usuarios.isEmpty()) {
                     return "No existen usuarios registrados en el sistema.";
@@ -116,9 +120,14 @@ public class CommandProcessor {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en INSUSU", false,
                             "Se esperaban al menos 5 parámetros obligatorios para registrar un nuevo usuario.",
                             new String[][] {
-                                    { "Formato Requerido", "INSUSU[\"Nombre Completo\", \"email\", \"username\", \"password\", \"idRol\", \"fotoRuta\"]" },
-                                    { "Roles Permitidos", "1 = Director, 2 = Delegado Curricular, 3 = Docente Redactor" },
-                                    { "Ejemplo Válido", "INSUSU[\"Lic. Carlos Roca\", \"croca@uagrm.edu.bo\", \"croca\", \"" + PasswordValidator.EJEMPLO_VALIDO + "\", \"3\", \"fotos/croca.png\"]" }
+                                    { "Formato Requerido",
+                                            "INSUSU[\"Nombre Completo\", \"email\", \"username\", \"password\", \"idRol\", \"fotoRuta\"]" },
+                                    { "Roles Permitidos",
+                                            "1 = Director, 2 = Delegado Curricular, 3 = Docente Redactor" },
+                                    { "Ejemplo Válido",
+                                            "INSUSU[\"Lic. Carlos Roca\", \"croca@uagrm.edu.bo\", \"croca\", \""
+                                                    + PasswordValidator.EJEMPLO_VALIDO
+                                                    + "\", \"3\", \"fotos/croca.png\"]" }
                             }, "HELP[\"*\"]", GUIA_FOTO_USUARIO);
                 }
                 String nombre = p[0].trim();
@@ -134,14 +143,16 @@ public class CommandProcessor {
                     return generarTarjetaRespuestaHTML("Contraseña Inválida (Seguridad Requerida)", false,
                             resPass.getMensaje(),
                             new String[][] {
-                                    { "Requisitos", "Mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número y 1 símbolo especial" },
+                                    { "Requisitos",
+                                            "Mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número y 1 símbolo especial" },
                                     { "Ejemplo Sugerido", PasswordValidator.EJEMPLO_VALIDO }
                             }, null);
                 }
 
                 if (usuarioDAO.obtenerPorEmail(email) != null) {
                     return generarTarjetaRespuestaHTML("Registro Rechazado", false,
-                            "La dirección de correo electrónico '" + email + "' ya se encuentra registrada en el sistema.",
+                            "La dirección de correo electrónico '" + email
+                                    + "' ya se encuentra registrada en el sistema.",
                             new String[][] { { "Email en Conflicto", email } }, "LISUSU");
                 }
                 if (usuarioDAO.obtenerPorUsername(username) != null) {
@@ -154,15 +165,19 @@ public class CommandProcessor {
                 Usuario u = new Usuario(nombre, email, username, passHash, foto, idRol);
                 int idGen = usuarioDAO.insertar(u);
                 if (idGen > 0) {
-                    String rolNombre = idRol == 1 ? "Director de Carrera" : (idRol == 2 ? "Delegado Curricular / Autoridad" : "Docente Redactor / Invitado");
-                    // Enviar notificación formal con credenciales al correo del nuevo usuario en segundo plano
+                    String rolNombre = idRol == 1 ? "Director de Carrera"
+                            : (idRol == 2 ? "Delegado Curricular / Autoridad" : "Docente Redactor / Invitado");
+                    // Enviar notificación formal con credenciales al correo del nuevo usuario en
+                    // segundo plano
                     final String emailDestino = email;
                     final String htmlNotif = generarNotificacionCredencialesHTML(nombre, email, username, pass, idRol);
                     new Thread(() -> {
                         try {
-                            EmailSender.enviarHTML(emailDestino, "[Seguimiento Curricular UAGRM] Sus Credenciales de Acceso", htmlNotif);
+                            EmailSender.enviarHTML(emailDestino,
+                                    "[Seguimiento Curricular UAGRM] Sus Credenciales de Acceso", htmlNotif);
                         } catch (Exception ex) {
-                            System.err.println("Error al despachar notificación de credenciales a " + emailDestino + ": " + ex.getMessage());
+                            System.err.println("Error al despachar notificación de credenciales a " + emailDestino
+                                    + ": " + ex.getMessage());
                         }
                     }).start();
 
@@ -189,8 +204,12 @@ public class CommandProcessor {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en UPDUSU", false,
                             "Se esperaban al menos 7 parámetros para actualizar los datos de un usuario.",
                             new String[][] {
-                                    { "Formato Requerido", "UPDUSU[\"id\", \"Nombre Completo\", \"email\", \"username\", \"password\", \"idRol\", \"fotoRuta\", \"activo\"]" },
-                                    { "Ejemplo Válido", "UPDUSU[\"1\", \"Carlos Roca\", \"croca@uagrm.edu.bo\", \"croca\", \"" + PasswordValidator.EJEMPLO_VALIDO + "\", \"3\", \"fotos/croca.png\", \"true\"]" }
+                                    { "Formato Requerido",
+                                            "UPDUSU[\"id\", \"Nombre Completo\", \"email\", \"username\", \"password\", \"idRol\", \"fotoRuta\", \"activo\"]" },
+                                    { "Ejemplo Válido",
+                                            "UPDUSU[\"1\", \"Carlos Roca\", \"croca@uagrm.edu.bo\", \"croca\", \""
+                                                    + PasswordValidator.EJEMPLO_VALIDO
+                                                    + "\", \"3\", \"fotos/croca.png\", \"true\"]" }
                             }, "LISUSU", GUIA_FOTO_USUARIO);
                 }
                 int id = parseEntero(p[0], "id del usuario");
@@ -245,7 +264,8 @@ public class CommandProcessor {
                             new String[][] { { "ID Usuario", String.valueOf(id) } }, "LISUSU");
                 } else {
                     return generarTarjetaRespuestaHTML("Error al Eliminar Usuario", false,
-                            "No se pudo eliminar el usuario ID " + id + ". Verifique que exista y no posea dependencias activas.",
+                            "No se pudo eliminar el usuario ID " + id
+                                    + ". Verifique que exista y no posea dependencias activas.",
                             null, "LISUSU");
                 }
             }
@@ -267,8 +287,10 @@ public class CommandProcessor {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en INSPLA", false,
                             "Se esperaban 8 parámetros para registrar el plan de estudios.",
                             new String[][] {
-                                    { "Formato Requerido", "INSPLA[\"codigo\", \"carrera\", \"anio\", \"descripcion\", \"objetivos\", \"perfil_egreso\", \"minCreditos\", \"maxCreditos\"]" },
-                                    { "Ejemplo Válido", "INSPLA[\"SIS-2026\", \"Ingenieria en Sistemas\", \"2026\", \"Nuevo plan\", \"Formar profesionales\", \"Perfil de egreso\", \"200\", \"240\"]" }
+                                    { "Formato Requerido",
+                                            "INSPLA[\"codigo\", \"carrera\", \"anio\", \"descripcion\", \"objetivos\", \"perfil_egreso\", \"minCreditos\", \"maxCreditos\"]" },
+                                    { "Ejemplo Válido",
+                                            "INSPLA[\"SIS-2026\", \"Ingenieria en Sistemas\", \"2026\", \"Nuevo plan\", \"Formar profesionales\", \"Perfil de egreso\", \"200\", \"240\"]" }
                             }, "LISPLA");
                 }
                 int anio = parseEntero(p[2], "anio del plan");
@@ -300,8 +322,10 @@ public class CommandProcessor {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en UPDPLA", false,
                             "Se esperaban 10 parámetros para actualizar el plan de estudios.",
                             new String[][] {
-                                    { "Formato Requerido", "UPDPLA[\"id\", \"codigo\", \"carrera\", \"anio\", \"descripcion\", \"objetivos\", \"perfil_egreso\", \"minCred\", \"maxCred\", \"estado\"]" },
-                                    { "Ejemplo Válido", "UPDPLA[\"1\", \"SIS-2026\", \"Ingenieria en Sistemas\", \"2026\", \"Desc\", \"Obj\", \"Perfil\", \"200\", \"240\", \"En Elaboracion\"]" }
+                                    { "Formato Requerido",
+                                            "UPDPLA[\"id\", \"codigo\", \"carrera\", \"anio\", \"descripcion\", \"objetivos\", \"perfil_egreso\", \"minCred\", \"maxCred\", \"estado\"]" },
+                                    { "Ejemplo Válido",
+                                            "UPDPLA[\"1\", \"SIS-2026\", \"Ingenieria en Sistemas\", \"2026\", \"Desc\", \"Obj\", \"Perfil\", \"200\", \"240\", \"En Elaboracion\"]" }
                             }, "LISPLA");
                 }
                 int id = parseEntero(p[0], "id del plan");
@@ -322,7 +346,8 @@ public class CommandProcessor {
                             }, "LISPLA");
                 } else {
                     return generarTarjetaRespuestaHTML("Error al Actualizar Plan", false,
-                            "No se pudo actualizar el plan de estudios ID " + id + ". Verifique que el identificador exista.",
+                            "No se pudo actualizar el plan de estudios ID " + id
+                                    + ". Verifique que el identificador exista.",
                             null, "LISPLA");
                 }
             }
@@ -352,8 +377,10 @@ public class CommandProcessor {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en INSASIG", false,
                             "Se esperaban 8 parámetros para crear una nueva asignatura.",
                             new String[][] {
-                                    { "Formato Requerido", "INSASIG[\"sigla\", \"nombre\", \"semestre\", \"horasTeoricas\", \"horasPracticas\", \"creditos\", \"areaFormativa\", \"idPlanEstudio\"]" },
-                                    { "Ejemplo Válido", "INSASIG[\"INF110\", \"Introduccion a la Informatica\", \"1\", \"4\", \"2\", \"5\", \"Ciencias de la Computacion\", \"1\"]" }
+                                    { "Formato Requerido",
+                                            "INSASIG[\"sigla\", \"nombre\", \"semestre\", \"horasTeoricas\", \"horasPracticas\", \"creditos\", \"areaFormativa\", \"idPlanEstudio\"]" },
+                                    { "Ejemplo Válido",
+                                            "INSASIG[\"INF110\", \"Introduccion a la Informatica\", \"1\", \"4\", \"2\", \"5\", \"Ciencias de la Computacion\", \"1\"]" }
                             }, "LISPLA");
                 }
                 int sem = parseEntero(p[2], "semestre (1 al 10)");
@@ -390,8 +417,10 @@ public class CommandProcessor {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en UPDASIG", false,
                             "Se esperaban 8 parámetros para actualizar la asignatura.",
                             new String[][] {
-                                    { "Formato Requerido", "UPDASIG[\"id\", \"sigla\", \"nombre\", \"semestre\", \"horasTeoricas\", \"horasPracticas\", \"creditos\", \"areaFormativa\"]" },
-                                    { "Ejemplo Válido", "UPDASIG[\"1\", \"INF110\", \"Introduccion a la Informatica\", \"1\", \"4\", \"2\", \"5\", \"Ciencias de la Computacion\"]" }
+                                    { "Formato Requerido",
+                                            "UPDASIG[\"id\", \"sigla\", \"nombre\", \"semestre\", \"horasTeoricas\", \"horasPracticas\", \"creditos\", \"areaFormativa\"]" },
+                                    { "Ejemplo Válido",
+                                            "UPDASIG[\"1\", \"INF110\", \"Introduccion a la Informatica\", \"1\", \"4\", \"2\", \"5\", \"Ciencias de la Computacion\"]" }
                             }, "LISASIG");
                 }
                 int id = parseEntero(p[0], "id de la asignatura");
@@ -434,7 +463,8 @@ public class CommandProcessor {
                             new String[][] { { "ID Asignatura", String.valueOf(id) } }, "LISASIG");
                 } else {
                     return generarTarjetaRespuestaHTML("Error al Eliminar Asignatura", false,
-                            "No se pudo eliminar la asignatura ID " + id + ". Verifique si tiene prerrequisitos o dependencias activas.",
+                            "No se pudo eliminar la asignatura ID " + id
+                                    + ". Verifique si tiene prerrequisitos o dependencias activas.",
                             null, "LISASIG");
                 }
             }
@@ -467,7 +497,8 @@ public class CommandProcessor {
                             new String[][] {
                                     { "Asignatura Destino ID", String.valueOf(idAsig) },
                                     { "Prerrequisito Intentado ID", String.valueOf(idReq) },
-                                    { "Regla Académica", "La malla curricular debe ser estrictamente un Grafo Acíclico Dirigido (DAG)" }
+                                    { "Regla Académica",
+                                            "La malla curricular debe ser estrictamente un Grafo Acíclico Dirigido (DAG)" }
                             }, "VERGRAFO[\"" + idAsig + "\"]");
                 } else {
                     return generarTarjetaRespuestaHTML("Error al Registrar Prerrequisito", false,
@@ -554,7 +585,9 @@ public class CommandProcessor {
                 if (p == null || p.length < 4) {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en INSCOM", false,
                             "Formato esperado: INSCOM[\"numero\", \"nombre\", \"descripcion\", \"idPlanEstudio\"]",
-                            new String[][] { { "Ejemplo Válido", "INSCOM[\"1\", \"Marco Referencial\", \"Bases institucionales\", \"1\"]" } }, "LISPLA");
+                            new String[][] { { "Ejemplo Válido",
+                                    "INSCOM[\"1\", \"Marco Referencial\", \"Bases institucionales\", \"1\"]" } },
+                            "LISPLA");
                 }
                 int num = parseEntero(p[0], "numeroComponente");
                 int idPlan = parseEntero(p[3], "idPlanEstudio");
@@ -572,7 +605,9 @@ public class CommandProcessor {
                 } else {
                     return generarTarjetaRespuestaHTML("Error al Registrar Componente", false,
                             "Error al registrar componente. Verifique que el número no esté duplicado en el plan y que el idPlan exista.",
-                            new String[][] { { "Número Intentado", String.valueOf(num) }, { "Plan ID", String.valueOf(idPlan) } }, "LISPLA");
+                            new String[][] { { "Número Intentado", String.valueOf(num) },
+                                    { "Plan ID", String.valueOf(idPlan) } },
+                            "LISPLA");
                 }
             }
 
@@ -598,8 +633,10 @@ public class CommandProcessor {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en INSCAP", false,
                             "Se esperaban 4 parámetros obligatorios para registrar un capítulo curricular.",
                             new String[][] {
-                                    { "Formato Requerido", "INSCAP[\"numero\", \"titulo\", \"contenido\", \"idComponente\"]" },
-                                    { "Ejemplo Válido", "INSCAP[\"1\", \"Diagnóstico Profesional\", \"Estudio del mercado laboral en la región...\", \"1\"]" }
+                                    { "Formato Requerido",
+                                            "INSCAP[\"numero\", \"titulo\", \"contenido\", \"idComponente\"]" },
+                                    { "Ejemplo Válido",
+                                            "INSCAP[\"1\", \"Diagnóstico Profesional\", \"Estudio del mercado laboral en la región...\", \"1\"]" }
                             }, "HELP[\"*\"]");
                 }
                 int num = parseEntero(p[0], "numeroCapitulo");
@@ -619,7 +656,9 @@ public class CommandProcessor {
                 } else {
                     return generarTarjetaRespuestaHTML("Error al Registrar Capítulo", false,
                             "Error al registrar capítulo en la base de datos. Verifique que el número no esté duplicado en el componente y que el idComponente exista.",
-                            new String[][] { { "Número Intentado", String.valueOf(num) }, { "Componente ID", String.valueOf(idComp) } }, "LISCOM");
+                            new String[][] { { "Número Intentado", String.valueOf(num) },
+                                    { "Componente ID", String.valueOf(idComp) } },
+                            "LISCOM");
                 }
             }
 
@@ -628,7 +667,9 @@ public class CommandProcessor {
                 if (p == null || p.length < 5) {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en UPDCAP", false,
                             "Formato esperado: UPDCAP[\"id\", \"numero\", \"titulo\", \"contenido\", \"idComponente\"]",
-                            new String[][] { { "Ejemplo Válido", "UPDCAP[\"1\", \"1\", \"Justificacion Curricular Actualizada\", \"Nuevo texto...\", \"1\"]" } }, "LISCAP");
+                            new String[][] { { "Ejemplo Válido",
+                                    "UPDCAP[\"1\", \"1\", \"Justificacion Curricular Actualizada\", \"Nuevo texto...\", \"1\"]" } },
+                            "LISCAP");
                 }
                 int id = parseEntero(p[0], "id del capitulo");
                 int num = parseEntero(p[1], "numero de capitulo");
@@ -667,7 +708,8 @@ public class CommandProcessor {
                             new String[][] { { "ID Capítulo", String.valueOf(id) } }, "LISCAP");
                 } else {
                     return generarTarjetaRespuestaHTML("Error al Eliminar Capítulo", false,
-                            "No se pudo eliminar el capítulo ID " + id + ". Verifique si tiene dependencias activas (observaciones, evidencias o asignaciones).",
+                            "No se pudo eliminar el capítulo ID " + id
+                                    + ". Verifique si tiene dependencias activas (observaciones, evidencias o asignaciones).",
                             null, "LISCAP");
                 }
             }
@@ -708,7 +750,8 @@ public class CommandProcessor {
                 boolean ok = capituloDAO.removerRedactor(idCap, idUsu);
                 if (ok) {
                     return generarTarjetaRespuestaHTML("Asignación de Redactor Removida", true,
-                            "La designación del docente redactor ID " + idUsu + " para el capítulo ID " + idCap + " ha sido removida.",
+                            "La designación del docente redactor ID " + idUsu + " para el capítulo ID " + idCap
+                                    + " ha sido removida.",
                             new String[][] {
                                     { "ID Capítulo", String.valueOf(idCap) },
                                     { "ID Usuario Removido", String.valueOf(idUsu) }
@@ -731,7 +774,8 @@ public class CommandProcessor {
                             "Formato esperado: CAMBESTADO[\"idCapitulo\", \"nuevoEstado\", \"justificacionTecnica\", \"idUsuario\"]",
                             new String[][] {
                                     { "Estados Permitidos", "'Borrador', 'En Revision', 'Observado', 'Aprobado'" },
-                                    { "Ejemplo Válido", "CAMBESTADO[\"1\", \"En Revision\", \"Se completo la primera version\", \"3\"]" }
+                                    { "Ejemplo Válido",
+                                            "CAMBESTADO[\"1\", \"En Revision\", \"Se completo la primera version\", \"3\"]" }
                             }, "HELP[\"*\"]");
                 }
                 int idCap = parseEntero(p[0], "idCapitulo");
@@ -750,7 +794,9 @@ public class CommandProcessor {
                 if (nuevoEstadoId == -1) {
                     return generarTarjetaRespuestaHTML("Estado Inválido", false,
                             "El estado '" + nuevoEstado + "' no es reconocido por la máquina de estados.",
-                            new String[][] { { "Estados Válidos", "'Borrador', 'En Revision', 'Observado', 'Aprobado'" } }, "HELP[\"*\"]");
+                            new String[][] {
+                                    { "Estados Válidos", "'Borrador', 'En Revision', 'Observado', 'Aprobado'" } },
+                            "HELP[\"*\"]");
                 }
 
                 // VALIDACIÓN ESTRICTA PARA APROBACIÓN (RF-07)
@@ -763,18 +809,21 @@ public class CommandProcessor {
                                 new String[][] {
                                         { "Capítulo", cap.getTitulo() },
                                         { "Observaciones Pendientes", String.valueOf(obsPendientes) },
-                                        { "Regla Académica", "Todas las observaciones deben ser resueltas y aprobadas antes del cierre final" }
+                                        { "Regla Académica",
+                                                "Todas las observaciones deben ser resueltas y aprobadas antes del cierre final" }
                                 }, "LISOBS[\"" + idCap + "\"]");
                     }
 
                     int evidencias = capituloDAO.contarEvidencias(idCap);
                     if (evidencias == 0) {
                         return generarTarjetaRespuestaHTML("Rechazo de Aprobación Formal (RF-07)", false,
-                                "El Capítulo ID " + idCap + " no cuenta con ninguna evidencia documental obligatoria vinculada.",
+                                "El Capítulo ID " + idCap
+                                        + " no cuenta con ninguna evidencia documental obligatoria vinculada.",
                                 new String[][] {
                                         { "Capítulo", cap.getTitulo() },
                                         { "Evidencias Vinculadas", "0 documentos de respaldo" },
-                                        { "Regla Normativa", "Debe vincular al menos una resolución o respaldo documental antes de aprobar (RF-13)" }
+                                        { "Regla Normativa",
+                                                "Debe vincular al menos una resolución o respaldo documental antes de aprobar (RF-13)" }
                                 }, "BUSDOC[\"TIPO\", \"Resolucion\"]");
                     }
                 }
@@ -811,7 +860,9 @@ public class CommandProcessor {
                 if (p == null || p.length < 3) {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en INSOBS", false,
                             "Formato esperado: INSOBS[\"idCapitulo\", \"comentarioObservacion\", \"idUsuarioAutoridad\"]",
-                            new String[][] { { "Ejemplo Válido", "INSOBS[\"1\", \"Falta especificar la bibliografia obligatoria\", \"2\"]" } }, "LISCAP");
+                            new String[][] { { "Ejemplo Válido",
+                                    "INSOBS[\"1\", \"Falta especificar la bibliografia obligatoria\", \"2\"]" } },
+                            "LISCAP");
                 }
                 int idCap = parseEntero(p[0], "idCapitulo");
                 String comentario = p[1].trim();
@@ -857,7 +908,9 @@ public class CommandProcessor {
                 if (p == null || p.length < 3) {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en SUBSANOBS", false,
                             "Formato esperado: SUBSANOBS[\"idObservacion\", \"respuestaSubsanacion\", \"idUsuarioDelegado\"]",
-                            new String[][] { { "Ejemplo Válido", "SUBSANOBS[\"1\", \"Se incorporaron las citas en formato APA septima edicion\", \"3\"]" } }, "HELP[\"*\"]");
+                            new String[][] { { "Ejemplo Válido",
+                                    "SUBSANOBS[\"1\", \"Se incorporaron las citas en formato APA septima edicion\", \"3\"]" } },
+                            "HELP[\"*\"]");
                 }
                 int idObs = parseEntero(p[0], "idObservacion");
                 String respuesta = p[1].trim();
@@ -924,8 +977,10 @@ public class CommandProcessor {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en INSDOC", false,
                             "Se esperaban al menos 6 parámetros obligatorios para registrar un documento de evidencia.",
                             new String[][] {
-                                    { "Formato Requerido", "INSDOC[\"codigoNorma\", \"titulo\", \"tipoDoc\", \"organoEmisor\", \"fechaEmision(AAAA-MM-DD)\", \"archivoRuta\", \"idDocPadre(opcional)\"]" },
-                                    { "Ejemplo Válido", "INSDOC[\"RES-045/2026\", \"Resolucion de Comision\", \"Resolucion\", \"Consejo Facultativo\", \"2026-03-15\", \"https://drive.google.com/res045.pdf\", \"0\"]" }
+                                    { "Formato Requerido",
+                                            "INSDOC[\"codigoNorma\", \"titulo\", \"tipoDoc\", \"organoEmisor\", \"fechaEmision(AAAA-MM-DD)\", \"archivoRuta\", \"idDocPadre(opcional)\"]" },
+                                    { "Ejemplo Válido",
+                                            "INSDOC[\"RES-045/2026\", \"Resolucion de Comision\", \"Resolucion\", \"Consejo Facultativo\", \"2026-03-15\", \"https://drive.google.com/res045.pdf\", \"0\"]" }
                             }, "LISDOC", GUIA_DOCUMENTO_PDF);
                 }
                 Date fecha = parseFecha(p[4], "fechaEmision");
@@ -947,7 +1002,8 @@ public class CommandProcessor {
                                     { "Órgano Emisor", p[3].trim() },
                                     { "Fecha de Emisión", p[4].trim() },
                                     { "Archivo / Enlace", p[5].trim() },
-                                    { "Norma Jerárquica Padre", idPadre != null ? String.valueOf(idPadre) : "Norma Raíz" }
+                                    { "Norma Jerárquica Padre",
+                                            idPadre != null ? String.valueOf(idPadre) : "Norma Raíz" }
                             }, "LISDOC");
                 } else {
                     return generarTarjetaRespuestaHTML("Error al Registrar Documento", false,
@@ -1029,7 +1085,8 @@ public class CommandProcessor {
                     return generarTarjetaRespuestaHTML("Error de Sintaxis en BUSDOC", false,
                             "Formato esperado: BUSDOC[\"criterio\", \"valor\"]",
                             new String[][] {
-                                    { "Criterios Permitidos", "'TIPO', 'EMISOR', 'CODIGO', 'CAPITULO', 'VIGENTE' o texto libre" },
+                                    { "Criterios Permitidos",
+                                            "'TIPO', 'EMISOR', 'CODIGO', 'CAPITULO', 'VIGENTE' o texto libre" },
                                     { "Ejemplo Válido", "BUSDOC[\"TIPO\", \"Resolucion\"]" }
                             }, "LISDOC");
                 }
@@ -1039,7 +1096,8 @@ public class CommandProcessor {
                 List<DocumentoEvidencia> docs = documentoDAO.busquedaFacetada(criterio, valor);
                 if (docs.isEmpty()) {
                     return generarTarjetaRespuestaHTML("Búsqueda sin Resultados", false,
-                            "No se encontraron documentos de evidencia para el criterio '" + criterio + " = " + valor + "'.",
+                            "No se encontraron documentos de evidencia para el criterio '" + criterio + " = " + valor
+                                    + "'.",
                             new String[][] { { "Criterio", criterio }, { "Valor Buscado", valor } }, "LISDOC");
                 }
                 return generarTablaDocumentosHTML(docs,
@@ -1088,16 +1146,20 @@ public class CommandProcessor {
                     "El comando recibido en el asunto '" + subject + "' no fue reconocido por el sistema.",
                     new String[][] {
                             { "Asunto Recibido", subject },
-                            { "Sugerencia", "Envíe HELP[\"*\"] para consultar el manual del sistema con todos los comandos y ejemplos." }
+                            { "Sugerencia",
+                                    "Envíe HELP[\"*\"] para consultar el manual del sistema con todos los comandos y ejemplos." }
                     }, "HELP[\"*\"]");
 
         } catch (NumberFormatException e) {
+            LoggerService.error(remitente, subject, "Error en parámetro numérico: " + e.getMessage(), e);
             return generarTarjetaRespuestaHTML("Error en Parámetro Numérico", false,
                     e.getMessage(), null, "HELP[\"*\"]");
         } catch (IllegalArgumentException e) {
+            LoggerService.error(remitente, subject, "Error en parámetro de fecha u opción: " + e.getMessage(), e);
             return generarTarjetaRespuestaHTML("Error en Parámetro de Fecha u Opción", false,
                     e.getMessage(), null, "HELP[\"*\"]");
         } catch (Exception e) {
+            LoggerService.error(remitente, subject, "Error interno del servidor: " + e.getMessage(), e);
             return generarTarjetaRespuestaHTML("Error al Procesar Comando", false,
                     e.getMessage() != null ? e.getMessage() : "Error interno del servidor", null, "HELP[\"*\"]");
         }
@@ -1156,14 +1218,19 @@ public class CommandProcessor {
             if (comando.startsWith("INSUSU") || comando.startsWith("UPDUSU") || comando.startsWith("DELUSU")) {
                 return generarTarjetaRespuestaHTML("Permiso Denegado", false,
                         "Su rol 'Delegado Curricular' no tiene permisos para gestionar usuarios (INSUSU/UPDUSU/DELUSU). Acción reservada para Administradores - Director.",
-                        new String[][] { { "Rol Remitente", "Delegado Curricular (Rol 2)" }, { "Comando Solicitado", comando } }, "HELP[\"*\"]");
+                        new String[][] { { "Rol Remitente", "Delegado Curricular (Rol 2)" },
+                                { "Comando Solicitado", comando } },
+                        "HELP[\"*\"]");
             }
             if (comando.startsWith("INSPLA") || comando.startsWith("UPDPLA")) {
                 return generarTarjetaRespuestaHTML("Permiso Denegado", false,
                         "Su rol 'Delegado Curricular' no tiene permisos para crear o modificar planes de estudio. Acción reservada para Administradores - Director.",
-                        new String[][] { { "Rol Remitente", "Delegado Curricular (Rol 2)" }, { "Comando Solicitado", comando } }, "HELP[\"*\"]");
+                        new String[][] { { "Rol Remitente", "Delegado Curricular (Rol 2)" },
+                                { "Comando Solicitado", comando } },
+                        "HELP[\"*\"]");
             }
-            return null; // Habilitado para componentes, capítulos, observaciones, evidencias, tableros y reporte final
+            return null; // Habilitado para componentes, capítulos, observaciones, evidencias, tableros y
+                         // reporte final
         }
 
         // Restricciones para Rol 3 (Invitado Redactor)
@@ -1175,8 +1242,11 @@ public class CommandProcessor {
                     comando.startsWith("INSCOM") || comando.startsWith("ASIGCAP") || comando.startsWith("DELASIGCAP") ||
                     comando.startsWith("CAMBESTADO") || comando.startsWith("INSOBS")) {
                 return generarTarjetaRespuestaHTML("Permiso Denegado", false,
-                        "Su rol 'Invitado Redactor' no tiene autorización para ejecutar el comando '" + comando + "'. Sus permisos están limitados a redactar capítulos (INSCAP/UPDCAP), subsanar observaciones (SUBSANOBS), vincular evidencias (VINCULEVI) y consultar su avance.",
-                        new String[][] { { "Rol Remitente", "Invitado Redactor (Rol 3)" }, { "Comando Solicitado", comando } }, "HELP[\"*\"]");
+                        "Su rol 'Invitado Redactor' no tiene autorización para ejecutar el comando '" + comando
+                                + "'. Sus permisos están limitados a redactar capítulos (INSCAP/UPDCAP), subsanar observaciones (SUBSANOBS), vincular evidencias (VINCULEVI) y consultar su avance.",
+                        new String[][] { { "Rol Remitente", "Invitado Redactor (Rol 3)" },
+                                { "Comando Solicitado", comando } },
+                        "HELP[\"*\"]");
             }
             return null;
         }
@@ -1231,23 +1301,29 @@ public class CommandProcessor {
                 "</body></html>";
     }
 
-    private static final String GUIA_FOTO_USUARIO =
-            "<h4 style='margin: 0 0 6px 0; color: #16a085; font-size: 13px;'>💡 Guía para Foto de Usuario:</h4>" +
+    private static final String GUIA_FOTO_USUARIO = "<h4 style='margin: 0 0 6px 0; color: #16a085; font-size: 13px;'>💡 Guía para Foto de Usuario:</h4>"
+            +
             "<p style='margin: 0; font-size: 12px; color: #555; line-height: 1.4;'>" +
-            "• <b>Enlace en la Nube (Recomendado):</b> Puede ingresar una URL pública a una imagen web (ej: <code>https://i.imgur.com/avatar.png</code> o <code>https://i.pravatar.cc/150?u=croca</code>).<br/>" +
+            "• <b>Enlace en la Nube (Recomendado):</b> Puede ingresar una URL pública a una imagen web (ej: <code>https://i.imgur.com/avatar.png</code> o <code>https://i.pravatar.cc/150?u=croca</code>).<br/>"
+            +
             "• <b>Ruta Local:</b> Puede indicar una ruta en el servidor como <code>fotos/croca.png</code>.<br/>" +
-            "• <b>Avatar Automático:</b> Si deja <code>\"fotos/default.png\"</code> o un texto vacío, el sistema generará automáticamente un avatar circular con las iniciales del usuario y color de su rol." +
+            "• <b>Avatar Automático:</b> Si deja <code>\"fotos/default.png\"</code> o un texto vacío, el sistema generará automáticamente un avatar circular con las iniciales del usuario y color de su rol."
+            +
             "</p>";
 
-    private static final String GUIA_DOCUMENTO_PDF =
-            "<h4 style='margin: 0 0 6px 0; color: #16a085; font-size: 13px;'>💡 Guía para Documentos PDF y Evidencias:</h4>" +
+    private static final String GUIA_DOCUMENTO_PDF = "<h4 style='margin: 0 0 6px 0; color: #16a085; font-size: 13px;'>💡 Guía para Documentos PDF y Evidencias:</h4>"
+            +
             "<p style='margin: 0; font-size: 12px; color: #555; line-height: 1.4;'>" +
             "• <b>Enlace en la Nube con Google Drive (Recomendado):</b><br/>" +
             "  1. Suba su archivo PDF a su Google Drive o repositorio público.<br/>" +
-            "  2. En Drive, haga clic en <i>Compartir</i> y seleccione: <b>'Cualquier persona con el enlace (Lector)'</b>.<br/>" +
-            "  3. Pegue el enlace obtenido en el parámetro <code>archivoRuta</code> (ej: <code>https://drive.google.com/file/d/1A2B3C.../view</code>).<br/>" +
-            "• <b>Ruta Local en el Servidor:</b> Puede ingresar <code>storage/documentos/mi_archivo.pdf</code> si el archivo reside en el servidor.<br/>" +
-            "• <b>Visualización:</b> Al consultar con <code>LISDOC</code> o <code>BUSDOC</code>, se generará un botón interactivo para ver y descargar el documento directamente." +
+            "  2. En Drive, haga clic en <i>Compartir</i> y seleccione: <b>'Cualquier persona con el enlace (Lector)'</b>.<br/>"
+            +
+            "  3. Pegue el enlace obtenido en el parámetro <code>archivoRuta</code> (ej: <code>https://drive.google.com/file/d/1A2B3C.../view</code>).<br/>"
+            +
+            "• <b>Ruta Local en el Servidor:</b> Puede ingresar <code>storage/documentos/mi_archivo.pdf</code> si el archivo reside en el servidor.<br/>"
+            +
+            "• <b>Visualización:</b> Al consultar con <code>LISDOC</code> o <code>BUSDOC</code>, se generará un botón interactivo para ver y descargar el documento directamente."
+            +
             "</p>";
 
     private String generarTarjetaRespuestaHTML(String titulo, boolean exito, String mensajePrincipal,
@@ -1262,11 +1338,14 @@ public class CommandProcessor {
         String icono = exito ? "✔ " : "✖ ";
 
         StringBuilder sb = new StringBuilder();
-        sb.append("<html><body style='font-family: Arial, sans-serif; color: #2c3e50; margin: 20px; line-height: 1.5;'>");
+        sb.append(
+                "<html><body style='font-family: Arial, sans-serif; color: #2c3e50; margin: 20px; line-height: 1.5;'>");
         sb.append("<div style='max-width: 650px; border: 1px solid #dcdde1; border-top: 5px solid ")
-                .append(colorPrincipal).append("; border-radius: 6px; background-color: #ffffff; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);'>");
+                .append(colorPrincipal)
+                .append("; border-radius: 6px; background-color: #ffffff; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);'>");
 
-        sb.append("<div style='background-color: ").append(fondoHeader).append("; padding: 12px 15px; border-radius: 4px; margin-bottom: 15px;'>")
+        sb.append("<div style='background-color: ").append(fondoHeader)
+                .append("; padding: 12px 15px; border-radius: 4px; margin-bottom: 15px;'>")
                 .append("<h3 style='margin: 0; color: ").append(colorPrincipal).append("; font-size: 18px;'>")
                 .append(icono).append(titulo).append("</h3>")
                 .append("</div>");
@@ -1276,11 +1355,13 @@ public class CommandProcessor {
                 .append("</p>");
 
         if (detalles != null && detalles.length > 0) {
-            sb.append("<table cellpadding='6' cellspacing='0' style='width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 15px; background-color: #fafbfc; border: 1px solid #ebedf0; border-radius: 4px;'>");
+            sb.append(
+                    "<table cellpadding='6' cellspacing='0' style='width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 15px; background-color: #fafbfc; border: 1px solid #ebedf0; border-radius: 4px;'>");
             for (String[] fila : detalles) {
                 if (fila != null && fila.length >= 2) {
                     sb.append("<tr style='border-bottom: 1px solid #ebedf0;'>")
-                            .append("<td style='padding: 8px 12px; width: 35%; color: #7f8c8d; font-weight: bold;'>").append(fila[0]).append(":</td>")
+                            .append("<td style='padding: 8px 12px; width: 35%; color: #7f8c8d; font-weight: bold;'>")
+                            .append(fila[0]).append(":</td>")
                             .append("<td style='padding: 8px 12px; color: #2c3e50;'>").append(fila[1]).append("</td>")
                             .append("</tr>");
                 }
@@ -1289,13 +1370,15 @@ public class CommandProcessor {
         }
 
         if (guiaExtraHTML != null && !guiaExtraHTML.trim().isEmpty()) {
-            sb.append("<div style='background-color: #fdfefe; border: 1px solid #d4efdf; border-left: 4px solid #1abc9c; padding: 12px 15px; border-radius: 4px; margin-bottom: 15px;'>")
+            sb.append(
+                    "<div style='background-color: #fdfefe; border: 1px solid #d4efdf; border-left: 4px solid #1abc9c; padding: 12px 15px; border-radius: 4px; margin-bottom: 15px;'>")
                     .append(guiaExtraHTML)
                     .append("</div>");
         }
 
         if (comandoSiguiente != null && !comandoSiguiente.trim().isEmpty()) {
-            sb.append("<div style='background-color: #f8f9fa; border-left: 3px solid #2980b9; padding: 10px 14px; border-radius: 0 4px 4px 0; margin-top: 15px;'>")
+            sb.append(
+                    "<div style='background-color: #f8f9fa; border-left: 3px solid #2980b9; padding: 10px 14px; border-radius: 0 4px 4px 0; margin-top: 15px;'>")
                     .append("<span style='font-size: 12px; color: #7f8c8d; text-transform: uppercase; font-weight: bold;'>Próximo Comando Recomendado:</span><br/>")
                     .append("<code style='font-size: 13px; color: #2980b9; font-weight: bold; background: #e8f4fc; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-top: 4px;'>")
                     .append(comandoSiguiente)
@@ -1303,7 +1386,8 @@ public class CommandProcessor {
                     .append("</div>");
         }
 
-        sb.append("<div style='margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; font-size: 11px; color: #95a5a6; text-align: center;'>")
+        sb.append(
+                "<div style='margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; font-size: 11px; color: #95a5a6; text-align: center;'>")
                 .append("Sistema de Seguimiento al Diseño Curricular — UAGRM TecnoWeb 2026")
                 .append("</div>");
 
@@ -1312,33 +1396,51 @@ public class CommandProcessor {
         return sb.toString();
     }
 
-    private String generarNotificacionCredencialesHTML(String nombre, String email, String username, String passPlana, int idRol) {
-        String nombreRol = idRol == 1 ? "Director de Carrera" : (idRol == 2 ? "Delegado Curricular / Autoridad" : "Docente Redactor / Invitado");
+    private String generarNotificacionCredencialesHTML(String nombre, String email, String username, String passPlana,
+            int idRol) {
+        String nombreRol = idRol == 1 ? "Director de Carrera"
+                : (idRol == 2 ? "Delegado Curricular / Autoridad" : "Docente Redactor / Invitado");
         String rolColor = idRol == 1 ? "#c0392b" : (idRol == 2 ? "#2980b9" : "#27ae60");
 
         return "<html><body style='font-family: Arial, sans-serif; color: #333; margin: 20px; line-height: 1.5;'>" +
-                "<div style='max-width: 650px; border: 1px solid #dcdde1; border-top: 5px solid #003366; border-radius: 6px; background-color: #ffffff; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);'>" +
-                "<div style='background-color: #003366; color: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;'>" +
+                "<div style='max-width: 650px; border: 1px solid #dcdde1; border-top: 5px solid #003366; border-radius: 6px; background-color: #ffffff; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);'>"
+                +
+                "<div style='background-color: #003366; color: white; padding: 15px; border-radius: 4px; margin-bottom: 15px;'>"
+                +
                 "<h2 style='margin: 0; font-size: 20px;'>Bienvenido al Sistema de Seguimiento Curricular</h2>" +
-                "<p style='margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;'>Universidad Autónoma Gabriel René Moreno - Grupo 02 SA</p>" +
+                "<p style='margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;'>Universidad Autónoma Gabriel René Moreno - Grupo 02 SA</p>"
+                +
                 "</div>" +
                 "<p>Estimado(a) <b>" + nombre + "</b>,</p>" +
-                "<p>Se le ha otorgado acceso al <b>Sistema de Seguimiento al Rediseño Curricular por Correo Electrónico</b>. A continuación encontrará sus credenciales oficiales de acceso:</p>" +
-                "<div style='background-color: #f7f9fc; border: 1px solid #e1e8ed; padding: 15px; border-radius: 4px; margin: 15px 0;'>" +
-                "<table cellpadding='6' cellspacing='0' style='width: 100%; border-collapse: collapse; font-size: 13px;'>" +
-                "<tr><td style='width: 35%; color: #666; font-weight: bold;'>Nombre Completo:</td><td><b>" + nombre + "</b></td></tr>" +
+                "<p>Se le ha otorgado acceso al <b>Sistema de Seguimiento al Rediseño Curricular por Correo Electrónico</b>. A continuación encontrará sus credenciales oficiales de acceso:</p>"
+                +
+                "<div style='background-color: #f7f9fc; border: 1px solid #e1e8ed; padding: 15px; border-radius: 4px; margin: 15px 0;'>"
+                +
+                "<table cellpadding='6' cellspacing='0' style='width: 100%; border-collapse: collapse; font-size: 13px;'>"
+                +
+                "<tr><td style='width: 35%; color: #666; font-weight: bold;'>Nombre Completo:</td><td><b>" + nombre
+                + "</b></td></tr>" +
                 "<tr><td style='color: #666; font-weight: bold;'>Correo Electrónico:</td><td>" + email + "</td></tr>" +
-                "<tr><td style='color: #666; font-weight: bold;'>Nombre de Usuario:</td><td><code style='font-size: 14px; color: #003366; font-weight: bold;'>" + username + "</code></td></tr>" +
-                "<tr><td style='color: #666; font-weight: bold;'>Contraseña Temporal:</td><td><code style='font-size: 14px; color: #c0392b; font-weight: bold; background: #fbeee6; padding: 2px 6px; border-radius: 3px;'>" + passPlana + "</code></td></tr>" +
-                "<tr><td style='color: #666; font-weight: bold;'>Rol Asignado:</td><td><span style='background-color: " + rolColor + "; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 12px;'>" + nombreRol + "</span></td></tr>" +
+                "<tr><td style='color: #666; font-weight: bold;'>Nombre de Usuario:</td><td><code style='font-size: 14px; color: #003366; font-weight: bold;'>"
+                + username + "</code></td></tr>" +
+                "<tr><td style='color: #666; font-weight: bold;'>Contraseña Temporal:</td><td><code style='font-size: 14px; color: #c0392b; font-weight: bold; background: #fbeee6; padding: 2px 6px; border-radius: 3px;'>"
+                + passPlana + "</code></td></tr>" +
+                "<tr><td style='color: #666; font-weight: bold;'>Rol Asignado:</td><td><span style='background-color: "
+                + rolColor
+                + "; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 12px;'>"
+                + nombreRol + "</span></td></tr>" +
                 "</table>" +
                 "</div>" +
-                "<h4 style='color: #003366; margin-top: 15px; margin-bottom: 8px;'>¿Cómo iniciar sesión por correo?</h4>" +
-                "<p style='font-size: 13px; color: #444; margin-bottom: 6px;'>Para vincular su buzón y recibir el menú de operaciones correspondiente a su rol, envíe un correo electrónico a <b>" + Config.MAIL_EMAIL + "</b> con el siguiente Asunto:</p>" +
-                "<div style='background-color: #edf2f7; border-left: 3px solid #003366; padding: 10px 14px; border-radius: 0 4px 4px 0; font-family: monospace; font-size: 13px; font-weight: bold; color: #2d3748;'>" +
+                "<h4 style='color: #003366; margin-top: 15px; margin-bottom: 8px;'>¿Cómo iniciar sesión por correo?</h4>"
+                +
+                "<p style='font-size: 13px; color: #444; margin-bottom: 6px;'>Para vincular su buzón y recibir el menú de operaciones correspondiente a su rol, envíe un correo electrónico a <b>"
+                + Config.MAIL_EMAIL + "</b> con el siguiente Asunto:</p>" +
+                "<div style='background-color: #edf2f7; border-left: 3px solid #003366; padding: 10px 14px; border-radius: 0 4px 4px 0; font-family: monospace; font-size: 13px; font-weight: bold; color: #2d3748;'>"
+                +
                 "LOGIN[\"" + email + "\", \"" + passPlana + "\"]" +
                 "</div>" +
-                "<div style='margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; font-size: 11px; color: #95a5a6; text-align: center;'>" +
+                "<div style='margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; font-size: 11px; color: #95a5a6; text-align: center;'>"
+                +
                 "Facultad de Contaduría Pública y Sistemas — UAGRM TecnoWeb 2026" +
                 "</div>" +
                 "</div></body></html>";
@@ -1358,7 +1460,8 @@ public class CommandProcessor {
     private String generarTablaComandosRolHTML(int idRol) {
         StringBuilder sb = new StringBuilder();
         String encabezadoColor = idRol == 1 ? "#003366" : (idRol == 2 ? "#2980b9" : "#27ae60");
-        sb.append("<table border='1' cellpadding='8' style='border-collapse: collapse; width: 100%; font-size: 12px; border-color: #ddd; margin-top: 12px;'>")
+        sb.append(
+                "<table border='1' cellpadding='8' style='border-collapse: collapse; width: 100%; font-size: 12px; border-color: #ddd; margin-top: 12px;'>")
                 .append("<tr style='background-color: ").append(encabezadoColor).append("; color: white;'>")
                 .append("<th>Caso de Uso</th><th>Comando</th><th>Parámetros Requeridos</th><th>Descripción y Ejemplo Listo para Enviar</th>")
                 .append("</tr>");
@@ -1442,7 +1545,8 @@ public class CommandProcessor {
         String fotoHtml;
         String rutaFoto = u.getFotoRuta() != null ? u.getFotoRuta().trim() : "";
         if (rutaFoto.startsWith("http://") || rutaFoto.startsWith("https://")) {
-            fotoHtml = "<img src='" + rutaFoto + "' alt='Foto' width='44' height='44' style='border-radius: 50%; object-fit: cover; border: 1px solid #ccc;'/>";
+            fotoHtml = "<img src='" + rutaFoto
+                    + "' alt='Foto' width='44' height='44' style='border-radius: 50%; object-fit: cover; border: 1px solid #ccc;'/>";
         } else {
             String iniciales = obtenerIniciales(u.getNombreCompleto());
             fotoHtml = "<div style='display: inline-block; width: 44px; height: 44px; line-height: 44px; border-radius: 50%; background-color: "
@@ -1454,24 +1558,31 @@ public class CommandProcessor {
         }
 
         return "<html><body style='font-family: Arial, sans-serif; color: #333; margin: 20px; line-height: 1.5;'>" +
-                "<div style='background-color: #003366; color: white; padding: 15px 20px; border-radius: 6px; max-width: 800px;'>" +
+                "<div style='background-color: #003366; color: white; padding: 15px 20px; border-radius: 6px; max-width: 800px;'>"
+                +
                 "<h2 style='margin: 0;'>Inicio de Sesión Exitoso</h2>" +
-                "<p style='margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;'>Sistema de Seguimiento al Diseño Curricular - TecnoWeb UAGRM</p>" +
+                "<p style='margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;'>Sistema de Seguimiento al Diseño Curricular - TecnoWeb UAGRM</p>"
+                +
                 "</div>" +
-                "<div style='background-color: #f7f9fc; border: 1px solid #e1e8ed; padding: 20px; border-radius: 6px; margin-top: 15px; max-width: 800px;'>" +
+                "<div style='background-color: #f7f9fc; border: 1px solid #e1e8ed; padding: 20px; border-radius: 6px; margin-top: 15px; max-width: 800px;'>"
+                +
                 "<table cellpadding='8' style='width: 100%; border-collapse: collapse; font-size: 14px;'>" +
                 "<tr><td style='width: 60px;'><b>Foto / Avatar:</b></td><td>" + fotoHtml + "</td></tr>" +
-                "<tr><td style='width: 150px;'><b>Nombre Completo:</b></td><td><b>" + u.getNombreCompleto() + "</b></td></tr>" +
+                "<tr><td style='width: 150px;'><b>Nombre Completo:</b></td><td><b>" + u.getNombreCompleto()
+                + "</b></td></tr>" +
                 "<tr><td><b>Nombre de Usuario:</b></td><td><code>" + u.getUsername() + "</code></td></tr>" +
                 "<tr><td><b>Correo Vinculado:</b></td><td>" + u.getEmail() + "</td></tr>" +
                 "<tr><td><b>Rol Asignado:</b></td><td>" + rolBadge + "</td></tr>" +
                 "</table>" +
                 "<hr style='border: 0; border-top: 1px solid #ddd; margin: 15px 0;'/>" +
-                "<h3 style='margin: 0 0 8px 0; color: #003366;'>Comandos Habilitados y Ejemplos de Uso para su Rol:</h3>" +
-                "<p style='margin: 0 0 10px 0; font-size: 13px; color: #555;'>Copie y pegue cualquiera de los siguientes comandos en el <b>Asunto (Subject)</b> de su correo:</p>" +
+                "<h3 style='margin: 0 0 8px 0; color: #003366;'>Comandos Habilitados y Ejemplos de Uso para su Rol:</h3>"
+                +
+                "<p style='margin: 0 0 10px 0; font-size: 13px; color: #555;'>Copie y pegue cualquiera de los siguientes comandos en el <b>Asunto (Subject)</b> de su correo:</p>"
+                +
                 generarTablaComandosRolHTML(u.getIdRol()) +
                 "</div>" +
-                "<p style='margin-top: 15px; font-size: 12px; color: #888;'>Su buzón ha quedado vinculado en el sistema. Todos los correos enviados desde esta dirección serán autorizados con sus privilegios.</p>" +
+                "<p style='margin-top: 15px; font-size: 12px; color: #888;'>Su buzón ha quedado vinculado en el sistema. Todos los correos enviados desde esta dirección serán autorizados con sus privilegios.</p>"
+                +
                 "</body></html>";
     }
 
@@ -1780,21 +1891,25 @@ public class CommandProcessor {
             String rutaFoto = u.getFotoRuta() != null ? u.getFotoRuta().trim() : "";
 
             if (rutaFoto.startsWith("http://") || rutaFoto.startsWith("https://")) {
-                fotoHtml = "<img src='" + rutaFoto + "' alt='Foto' width='36' height='36' style='border-radius: 50%; object-fit: cover; border: 1px solid #ccc;'/>";
+                fotoHtml = "<img src='" + rutaFoto
+                        + "' alt='Foto' width='36' height='36' style='border-radius: 50%; object-fit: cover; border: 1px solid #ccc;'/>";
             } else if (!rutaFoto.isEmpty() && !rutaFoto.equalsIgnoreCase("fotos/default.png")) {
-                // Intentar resolver la imagen local del servidor y optimizar a miniatura 72x72 px
+                // Intentar resolver la imagen local del servidor y optimizar a miniatura 72x72
+                // px
                 File archivoFoto = ImageHelper.resolverArchivoFoto(rutaFoto);
                 if (archivoFoto != null) {
                     String b64Miniatura = ImageHelper.generarMiniaturaBase64(archivoFoto, 72, 72);
                     if (b64Miniatura != null && !b64Miniatura.isEmpty()) {
                         String cid = "user_photo_" + u.getId();
-                        fotoHtml = "<img src='cid:" + cid + "' alt='Foto' width='36' height='36' style='border-radius: 50%; object-fit: cover; border: 1px solid #ccc;'/>";
+                        fotoHtml = "<img src='cid:" + cid
+                                + "' alt='Foto' width='36' height='36' style='border-radius: 50%; object-fit: cover; border: 1px solid #ccc;'/>";
                         sbAdjuntos.append("<!--CID_ATTACH:").append(cid).append(":").append(b64Miniatura).append("-->");
                     }
                 }
             }
 
-            // Fallback seguro: si no es URL o no se encontró/pudo procesar el archivo físico, generar Avatar Circular CSS
+            // Fallback seguro: si no es URL o no se encontró/pudo procesar el archivo
+            // físico, generar Avatar Circular CSS
             if (fotoHtml == null) {
                 String iniciales = obtenerIniciales(u.getNombreCompleto());
                 fotoHtml = "<div style='display: inline-block; width: 36px; height: 36px; line-height: 36px; border-radius: 50%; background-color: "
@@ -2127,7 +2242,8 @@ public class CommandProcessor {
             String enlaceHtml;
             String ruta = d.getArchivoRuta() != null ? d.getArchivoRuta().trim() : "";
             if (ruta.startsWith("http://") || ruta.startsWith("https://")) {
-                enlaceHtml = "<a href='" + ruta + "' target='_blank' style='display:inline-block; background-color:#2980b9; color:#ffffff; padding:4px 10px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:11px;'>📥 Ver / Descargar Documento</a>";
+                enlaceHtml = "<a href='" + ruta
+                        + "' target='_blank' style='display:inline-block; background-color:#2980b9; color:#ffffff; padding:4px 10px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:11px;'>📥 Ver / Descargar Documento</a>";
             } else {
                 enlaceHtml = "<span style='display:inline-block; background-color:#ecf0f1; color:#2c3e50; padding:3px 6px; border-radius:3px; font-size:11px; font-family:monospace;'>📁 "
                         + (ruta.isEmpty() ? "storage/documentos/sin_archivo.pdf" : ruta) + "</span>";
@@ -2182,26 +2298,40 @@ public class CommandProcessor {
                 "<tr><td><b>Reportes y Estadísticas</b></td><td><code>REPAVANCE[\"*\"]</code><br/><code>REPUSUARIOS[\"*\"]</code></td><td><code>HELP[\"*\"]</code> (Manual de comandos)</td></tr>"
                 +
                 "</table>" +
-                "<div style='margin-top: 25px; padding: 20px; border: 1px solid #b2dfdb; background-color: #f4fbf9; border-radius: 6px; border-left: 5px solid #00897b;'>" +
-                "<h3 style='margin: 0 0 14px 0; color: #004d40; font-size: 16px;'>📎 Guía Práctica: Cómo Cargar Fotos y Documentos PDF</h3>" +
-                "<div style='background-color: #ffffff; border: 1px solid #e0f2f1; padding: 14px; border-radius: 4px; margin-bottom: 12px;'>" +
-                "<h4 style='margin: 0 0 6px 0; color: #00695c; font-size: 14px;'>1. Fotos de Perfil de Usuario (Comandos INSUSU / UPDUSU):</h4>" +
+                "<div style='margin-top: 25px; padding: 20px; border: 1px solid #b2dfdb; background-color: #f4fbf9; border-radius: 6px; border-left: 5px solid #00897b;'>"
+                +
+                "<h3 style='margin: 0 0 14px 0; color: #004d40; font-size: 16px;'>📎 Guía Práctica: Cómo Cargar Fotos y Documentos PDF</h3>"
+                +
+                "<div style='background-color: #ffffff; border: 1px solid #e0f2f1; padding: 14px; border-radius: 4px; margin-bottom: 12px;'>"
+                +
+                "<h4 style='margin: 0 0 6px 0; color: #00695c; font-size: 14px;'>1. Fotos de Perfil de Usuario (Comandos INSUSU / UPDUSU):</h4>"
+                +
                 "<p style='margin: 0; font-size: 13px; color: #444; line-height: 1.5;'>" +
-                "• <b>Enlace Web (Recomendado):</b> Puede ingresar una URL pública hacia la imagen (ej: <code>https://i.imgur.com/usuario.png</code> o <code>https://i.pravatar.cc/150?u=croca</code>). En <code>LISUSU</code> se renderizará la foto real.<br/>" +
-                "• <b>Avatar Automático:</b> Si coloca <code>\"fotos/default.png\"</code> o una ruta local vacía, el sistema generará automáticamente un avatar circular CSS con las iniciales del usuario y el color institucional de su rol." +
+                "• <b>Enlace Web (Recomendado):</b> Puede ingresar una URL pública hacia la imagen (ej: <code>https://i.imgur.com/usuario.png</code> o <code>https://i.pravatar.cc/150?u=croca</code>). En <code>LISUSU</code> se renderizará la foto real.<br/>"
+                +
+                "• <b>Avatar Automático:</b> Si coloca <code>\"fotos/default.png\"</code> o una ruta local vacía, el sistema generará automáticamente un avatar circular CSS con las iniciales del usuario y el color institucional de su rol."
+                +
                 "</p>" +
                 "</div>" +
-                "<div style='background-color: #ffffff; border: 1px solid #e0f2f1; padding: 14px; border-radius: 4px;'>" +
-                "<h4 style='margin: 0 0 6px 0; color: #00695c; font-size: 14px;'>2. Documentos PDF de Respaldo y Evidencias (Comando INSDOC):</h4>" +
+                "<div style='background-color: #ffffff; border: 1px solid #e0f2f1; padding: 14px; border-radius: 4px;'>"
+                +
+                "<h4 style='margin: 0 0 6px 0; color: #00695c; font-size: 14px;'>2. Documentos PDF de Respaldo y Evidencias (Comando INSDOC):</h4>"
+                +
                 "<p style='margin: 0; font-size: 13px; color: #444; line-height: 1.5;'>" +
-                "• <b>Paso 1:</b> Suba su documento PDF a su cuenta de <b>Google Drive</b>, OneDrive o repositorio público.<br/>" +
-                "• <b>Paso 2:</b> En Google Drive, haga clic derecho en el archivo ➔ <i>Compartir</i> ➔ Cambie el acceso general a <b>'Cualquier persona con el enlace (Lector)'</b> y copie el enlace.<br/>" +
+                "• <b>Paso 1:</b> Suba su documento PDF a su cuenta de <b>Google Drive</b>, OneDrive o repositorio público.<br/>"
+                +
+                "• <b>Paso 2:</b> En Google Drive, haga clic derecho en el archivo ➔ <i>Compartir</i> ➔ Cambie el acceso general a <b>'Cualquier persona con el enlace (Lector)'</b> y copie el enlace.<br/>"
+                +
                 "• <b>Paso 3:</b> Pegue la URL completa en el parámetro <code>archivoRuta</code> del comando:<br/>" +
-                "<code style='display: block; background: #eef7f6; padding: 8px 12px; border-radius: 3px; color: #004d40; margin: 6px 0; font-size: 12px;'>" +
-                "INSDOC[\"RES-045/2026\", \"Aprobación del Nuevo Plan\", \"Resolucion\", \"Consejo Facultativo\", \"2026-03-15\", \"https://drive.google.com/file/d/1A2B3C4D.../view\", \"0\"]" +
+                "<code style='display: block; background: #eef7f6; padding: 8px 12px; border-radius: 3px; color: #004d40; margin: 6px 0; font-size: 12px;'>"
+                +
+                "INSDOC[\"RES-045/2026\", \"Aprobación del Nuevo Plan\", \"Resolucion\", \"Consejo Facultativo\", \"2026-03-15\", \"https://drive.google.com/file/d/1A2B3C4D.../view\", \"0\"]"
+                +
                 "</code>" +
-                "• <b>Paso 4:</b> Al consultar con <code>LISDOC</code> o <code>BUSDOC</code>, el sistema incluirá un botón interactivo <b>[📥 Ver / Descargar Documento]</b> que abrirá el PDF de inmediato.<br/>" +
-                "• <i>Almacenamiento Local:</i> Si prefiere almacenar físicamente el archivo en el servidor, colóquelo en la carpeta <code>storage/documentos/</code> e indique <code>storage/documentos/resolucion045.pdf</code>." +
+                "• <b>Paso 4:</b> Al consultar con <code>LISDOC</code> o <code>BUSDOC</code>, el sistema incluirá un botón interactivo <b>[📥 Ver / Descargar Documento]</b> que abrirá el PDF de inmediato.<br/>"
+                +
+                "• <i>Almacenamiento Local:</i> Si prefiere almacenar físicamente el archivo en el servidor, colóquelo en la carpeta <code>storage/documentos/</code> e indique <code>storage/documentos/resolucion045.pdf</code>."
+                +
                 "</p>" +
                 "</div>" +
                 "</div>" +

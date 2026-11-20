@@ -11,8 +11,8 @@ public class Config {
     // Servidor de correo electrónico (POP3 y SMTP)
     // public static final String MAIL_HOST = getEnv("MAIL_HOST",
     // "www.tecnoweb.org.bo");
+    public static final String MAIL_HOST = getEnv("MAIL_HOST", "tecnoweb.org.bo");
     // public static final String MAIL_HOST = getEnv("MAIL_HOST", "139.99.68.169");
-    public static final String MAIL_HOST = getEnv("MAIL_HOST", "139.99.68.169");
     public static final int POP3_PORT = getEnvInt("POP3_PORT", 110);
     public static final int SMTP_PORT = getEnvInt("SMTP_PORT", 25);
     public static final String MAIL_USER = getEnv("MAIL_USER", "grupo02sa");

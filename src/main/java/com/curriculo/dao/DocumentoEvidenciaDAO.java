@@ -18,7 +18,8 @@ public class DocumentoEvidenciaDAO {
 
     public int insertar(DocumentoEvidencia d) {
         String sql = "INSERT INTO documento_evidencia(codigo_norma, titulo, tipo_documento, organo_emisor, " +
-                "fecha_emision, archivo_ruta, vigente, id_documento_padre) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+                "fecha_emision, archivo_ruta, vigente, id_documento_padre, created_at, updated_at) " +
+                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
 
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null)
@@ -54,7 +55,7 @@ public class DocumentoEvidenciaDAO {
 
     public boolean actualizar(DocumentoEvidencia d) {
         String sql = "UPDATE documento_evidencia SET codigo_norma = ?, titulo = ?, tipo_documento = ?, " +
-                "organo_emisor = ?, fecha_emision = ?, archivo_ruta = ?, vigente = ?, id_documento_padre = ? WHERE id = ?";
+                "organo_emisor = ?, fecha_emision = ?, archivo_ruta = ?, vigente = ?, id_documento_padre = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
 
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null)
@@ -83,7 +84,7 @@ public class DocumentoEvidenciaDAO {
     }
 
     public boolean cambiarVigencia(int id, boolean vigente) {
-        String sql = "UPDATE documento_evidencia SET vigente = ? WHERE id = ?";
+        String sql = "UPDATE documento_evidencia SET vigente = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null)
                 return false;
@@ -101,7 +102,7 @@ public class DocumentoEvidenciaDAO {
     public List<DocumentoEvidencia> listarTodos() {
         List<DocumentoEvidencia> lista = new ArrayList<>();
         String sql = "SELECT d.id, d.codigo_norma, d.titulo, d.tipo_documento, d.organo_emisor, " +
-                "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.fecha_registro, " +
+                "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.created_at AS fecha_registro, " +
                 "padre.codigo_norma AS padre_codigo, padre.titulo AS padre_titulo " +
                 "FROM documento_evidencia d " +
                 "LEFT JOIN documento_evidencia padre ON d.id_documento_padre = padre.id " +
@@ -125,7 +126,7 @@ public class DocumentoEvidenciaDAO {
 
     public DocumentoEvidencia obtenerPorId(int id) {
         String sql = "SELECT d.id, d.codigo_norma, d.titulo, d.tipo_documento, d.organo_emisor, " +
-                "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.fecha_registro, " +
+                "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.created_at AS fecha_registro, " +
                 "padre.codigo_norma AS padre_codigo, padre.titulo AS padre_titulo " +
                 "FROM documento_evidencia d " +
                 "LEFT JOIN documento_evidencia padre ON d.id_documento_padre = padre.id " +
@@ -184,7 +185,7 @@ public class DocumentoEvidenciaDAO {
     public List<DocumentoEvidencia> listarEvidenciasDeCapitulo(int idCapitulo) {
         List<DocumentoEvidencia> lista = new ArrayList<>();
         String sql = "SELECT d.id, d.codigo_norma, d.titulo, d.tipo_documento, d.organo_emisor, " +
-                "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.fecha_registro, " +
+                "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.created_at AS fecha_registro, " +
                 "padre.codigo_norma AS padre_codigo, padre.titulo AS padre_titulo " +
                 "FROM evidencia_capitulo ec " +
                 "JOIN documento_evidencia d ON ec.id_documento_evidencia = d.id " +
@@ -218,7 +219,7 @@ public class DocumentoEvidenciaDAO {
         List<DocumentoEvidencia> lista = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
                 "SELECT DISTINCT d.id, d.codigo_norma, d.titulo, d.tipo_documento, d.organo_emisor, " +
-                        "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.fecha_registro, " +
+                        "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.created_at AS fecha_registro, " +
                         "padre.codigo_norma AS padre_codigo, padre.titulo AS padre_titulo " +
                         "FROM documento_evidencia d " +
                         "LEFT JOIN documento_evidencia padre ON d.id_documento_padre = padre.id " +

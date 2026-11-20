@@ -2,6 +2,7 @@ package com.curriculo.email;
 
 import com.curriculo.comandos.CommandProcessor;
 import com.curriculo.config.Config;
+import com.curriculo.util.LoggerService;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class EmailReceiver implements Runnable {
                 procesarBuzon();
             } catch (Exception e) {
                 System.err.println("Error durante el ciclo de lectura POP3: " + e.getMessage());
+                LoggerService.error("SYSTEM", "POP3_POLL", "Error durante el ciclo de lectura POP3", e);
             }
 
             try {
@@ -162,10 +164,16 @@ public class EmailReceiver implements Runnable {
             return false;
         }
 
+        long inicio = System.currentTimeMillis();
         System.out.println(">>> Procesando comando de: [" + remitente + "] | Asunto: [" + subject + "]");
 
         // Ejecutar comando
         String respuesta = processor.procesar(subject, remitente);
+        long duracion = System.currentTimeMillis() - inicio;
+
+        // Registrar en access.log el comando procesado
+        String estadoLog = (respuesta != null && (respuesta.contains("Error") || respuesta.contains("Denegado") || respuesta.contains("Rechazado"))) ? "RECHAZADO/ERROR" : "OK";
+        LoggerService.access(remitente, subject, estadoLog, duracion);
 
         // Enviar respuesta al remitente
         String subjectRespuesta = "RE: " + subject;

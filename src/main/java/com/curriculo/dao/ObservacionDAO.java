@@ -17,7 +17,8 @@ import java.util.List;
 public class ObservacionDAO {
 
     public int insertar(Observacion o) {
-        String sql = "INSERT INTO observacion(comentario, id_capitulo, id_usuario_observador) VALUES(?, ?, ?)";
+        String sql = "INSERT INTO observacion(comentario, id_capitulo, id_usuario_observador, created_at, updated_at) " +
+                "VALUES(?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null)
                 return -1;
@@ -43,7 +44,7 @@ public class ObservacionDAO {
 
     public boolean subsanar(int idObs, String respuesta, int idDelegado) {
         String sql = "UPDATE observacion SET respuesta_delegado = ?, fecha_respuesta = CURRENT_TIMESTAMP, " +
-                "resuelta = TRUE, fecha_cierre = CURRENT_TIMESTAMP, id_usuario_respuesta = ? WHERE id = ?";
+                "resuelta = TRUE, fecha_cierre = CURRENT_TIMESTAMP, id_usuario_respuesta = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null)
                 return false;
@@ -61,7 +62,7 @@ public class ObservacionDAO {
 
     public List<Observacion> listarPorCapitulo(int idCapitulo) {
         List<Observacion> lista = new ArrayList<>();
-        String sql = "SELECT o.id, o.comentario, o.fecha_creacion, o.respuesta_delegado, o.fecha_respuesta, " +
+        String sql = "SELECT o.id, o.comentario, o.created_at AS fecha_creacion, o.respuesta_delegado, o.fecha_respuesta, " +
                 "o.resuelta, o.fecha_cierre, o.id_capitulo, o.id_usuario_observador, o.id_usuario_respuesta, " +
                 "u1.nombre_completo AS observador_nombre, u2.nombre_completo AS delegado_nombre, " +
                 "c.titulo AS capitulo_titulo " +
@@ -70,7 +71,7 @@ public class ObservacionDAO {
                 "JOIN usuario u1 ON o.id_usuario_observador = u1.id " +
                 "LEFT JOIN usuario u2 ON o.id_usuario_respuesta = u2.id " +
                 "WHERE o.id_capitulo = ? " +
-                "ORDER BY o.fecha_creacion DESC";
+                "ORDER BY o.created_at DESC";
 
         try (Connection conn = Conexion.getConnection()) {
             if (conn == null)
@@ -127,7 +128,7 @@ public class ObservacionDAO {
     }
 
     public Observacion obtenerPorId(int id) {
-        String sql = "SELECT o.id, o.comentario, o.fecha_creacion, o.respuesta_delegado, o.fecha_respuesta, " +
+        String sql = "SELECT o.id, o.comentario, o.created_at AS fecha_creacion, o.respuesta_delegado, o.fecha_respuesta, " +
                 "o.resuelta, o.fecha_cierre, o.id_capitulo, o.id_usuario_observador, o.id_usuario_respuesta, " +
                 "u1.nombre_completo AS observador_nombre, u2.nombre_completo AS delegado_nombre, " +
                 "c.titulo AS capitulo_titulo " +

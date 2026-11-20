@@ -211,7 +211,7 @@ public class ReporteDAO {
 
             // 3. Documentos de respaldo y resoluciones vigentes
             String sqlDocs = "SELECT d.id, d.codigo_norma, d.titulo, d.tipo_documento, d.organo_emisor, " +
-                    "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.fecha_registro " +
+                    "d.fecha_emision, d.archivo_ruta, d.vigente, d.id_documento_padre, d.created_at AS fecha_registro " +
                     "FROM documento_evidencia d " +
                     "WHERE d.vigente = TRUE " +
                     "ORDER BY d.fecha_emision DESC";
